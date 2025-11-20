@@ -154,6 +154,12 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 - **FR-036**: System MUST show sample query results when users test tools
 - **FR-037**: System MUST display the MCP server URL (/mcp/:serverSlug) for client configuration
 
+#### Code Documentation
+- **FR-055**: All public methods, functions, and classes MUST include comprehensive TSDoc/JSDoc annotations
+- **FR-056**: TSDoc annotations MUST include description, @param tags for all parameters, @returns tag for return values, and @throws tags for exceptions
+- **FR-057**: All DTO classes MUST include class-level and property-level documentation with validation rules and examples
+- **FR-058**: All React components MUST include component-level documentation and props interface descriptions
+
 #### React Flow Canvas Interface
 - **FR-038**: System MUST display a React Flow canvas as the primary interface for managing datasources, MCP servers, and tools
 - **FR-039**: System MUST show a "+" node with "Add Datasource" label on the canvas (initial node when empty, or additional node to add more datasources)

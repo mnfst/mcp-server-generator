@@ -24,19 +24,19 @@
 
 **Purpose**: Project initialization and basic monorepo structure
 
-- [ ] T001 Create monorepo structure with backend/, frontend/, shared/ directories
-- [ ] T002 Initialize root package.json with npm workspaces configuration for backend, frontend, and shared packages
-- [ ] T003 [P] Create tsconfig.base.json in repository root with shared TypeScript compiler options
-- [ ] T004 [P] Create .env.example in repository root with environment variable templates (DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE, CREDENTIALS_ENCRYPTION_KEY, OPENAI_API_KEY, BACKEND_PORT, FRONTEND_PORT)
-- [ ] T005 [P] Create docker-compose.yml in repository root for MySQL 8.0 development database
-- [ ] T006 Initialize backend package with NestJS 10, TypeORM, class-validator, class-transformer, @modelcontextprotocol/sdk, openai dependencies in backend/package.json
-- [ ] T007 [P] Initialize frontend package with React 18, Vite, React Flow, TanStack Query, Tailwind CSS dependencies in frontend/package.json
-- [ ] T008 [P] Initialize shared package with TypeScript 5.x in shared/package.json
-- [ ] T009 [P] Create backend/tsconfig.json with project references to shared package
-- [ ] T010 [P] Create frontend/tsconfig.json with project references to shared package and Vite configuration
-- [ ] T011 [P] Create shared/tsconfig.json for shared types and DTOs
-- [ ] T012 [P] Setup shadcn/ui in frontend/ using CLI (npx shadcn-ui@latest init) with Tailwind CSS configuration
-- [ ] T013 [P] Add shadcn/ui components needed: Button, Card, Form, Input, Select, Dialog, Tabs, Accordion in frontend/src/components/ui/
+- [x] T001 Create monorepo structure with backend/, frontend/, shared/ directories
+- [x] T002 Initialize root package.json with npm workspaces configuration for backend, frontend, and shared packages
+- [x] T003 [P] Create tsconfig.base.json in repository root with shared TypeScript compiler options
+- [x] T004 [P] Create .env.example in repository root with environment variable templates (DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE, CREDENTIALS_ENCRYPTION_KEY, OPENAI_API_KEY, BACKEND_PORT, FRONTEND_PORT)
+- [x] T005 [P] Create docker-compose.yml in repository root for MySQL 8.0 development database
+- [x] T006 Initialize backend package with NestJS 10, TypeORM, class-validator, class-transformer, @modelcontextprotocol/sdk, openai dependencies in backend/package.json
+- [x] T007 [P] Initialize frontend package with React 18, Vite, React Flow, TanStack Query, Tailwind CSS dependencies in frontend/package.json
+- [x] T008 [P] Initialize shared package with TypeScript 5.x in shared/package.json
+- [x] T009 [P] Create backend/tsconfig.json with project references to shared package
+- [x] T010 [P] Create frontend/tsconfig.json with project references to shared package and Vite configuration
+- [x] T011 [P] Create shared/tsconfig.json for shared types and DTOs
+- [x] T012 [P] Setup shadcn/ui in frontend/ using CLI (npx shadcn-ui@latest init) with Tailwind CSS configuration
+- [x] T013 [P] Add shadcn/ui components needed: Button, Card, Form, Input, Select, Dialog, Tabs, Accordion in frontend/src/components/ui/
 
 ---
 
@@ -46,15 +46,15 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T014 Create backend/src/main.ts with NestJS bootstrap configuration (port 3001, CORS enabled, global validation pipe)
-- [ ] T015 Create backend/src/app.module.ts with TypeORM configuration for MySQL (host, port, username, password, database from environment variables, synchronize: true for development)
-- [ ] T016 [P] Create shared/src/types/index.ts as main export file for all shared types
-- [ ] T017 [P] Create shared/src/dtos/index.ts as main export file for all DTOs
-- [ ] T018 [P] Create frontend/src/main.tsx with React root rendering and TanStack Query provider setup
-- [ ] T019 [P] Create frontend/src/App.tsx with basic routing structure (single-page canvas application)
-- [ ] T020 [P] Create frontend/src/services/api.ts with TanStack Query configuration and base API client (axios or fetch with base URL: http://localhost:3001)
-- [ ] T021 [P] Create frontend/src/services/types.ts that re-exports types from shared package
-- [ ] T022 [P] Install and configure dagre layout library in frontend/ for React Flow auto-layout (npm install dagre @types/dagre)
+- [x] T014 Create backend/src/main.ts with NestJS bootstrap configuration (port 3001, CORS enabled, global validation pipe)
+- [x] T015 Create backend/src/app.module.ts with TypeORM configuration for MySQL (host, port, username, password, database from environment variables, synchronize: true for development)
+- [x] T016 [P] Create shared/src/types/index.ts as main export file for all shared types
+- [x] T017 [P] Create shared/src/dtos/index.ts as main export file for all DTOs
+- [x] T018 [P] Create frontend/src/main.tsx with React root rendering and TanStack Query provider setup
+- [x] T019 [P] Create frontend/src/App.tsx with basic routing structure (single-page canvas application)
+- [x] T020 [P] Create frontend/src/services/api.ts with TanStack Query configuration and base API client (axios or fetch with base URL: http://localhost:3001)
+- [x] T021 [P] Create frontend/src/services/types.ts that re-exports types from shared package
+- [x] T022 [P] Install and configure dagre layout library in frontend/ for React Flow auto-layout (npm install dagre @types/dagre)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -68,36 +68,36 @@
 
 ### Backend: Shared Types & DTOs (US1)
 
-- [ ] T023 [P] [US1] Create shared/src/types/datasource.types.ts with Datasource interface (id, name, type, host, port, database, username, status, createdAt, updatedAt)
-- [ ] T024 [P] [US1] Create shared/src/types/mcp-server.types.ts with MCPServer interface (id, name, slug, datasourceId, config, status, mcpEndpoint, createdAt, updatedAt)
-- [ ] T025 [P] [US1] Create shared/src/types/canvas-node.types.ts with CanvasNode interface (id, nodeId, type, positionX, positionY, datasourceId, mcpServerId, toolId, createdAt, updatedAt)
-- [ ] T026 [P] [US1] Create shared/src/dtos/create-datasource.dto.ts with validation rules (name, type='mysql', host, port, database, username, password)
-- [ ] T027 [P] [US1] Create shared/src/dtos/create-mcp-server.dto.ts with validation rules (datasourceId)
-- [ ] T028 [P] [US1] Create shared/src/dtos/create-canvas-node.dto.ts with validation rules (nodeId, type, positionX, positionY, datasourceId?, mcpServerId?, toolId?)
-- [ ] T029 [P] [US1] Create shared/src/dtos/update-canvas-node.dto.ts with validation rules (positionX?, positionY?)
+- [x] T023 [P] [US1] Create shared/src/types/datasource.types.ts with Datasource interface (id, name, type, host, port, database, username, status, createdAt, updatedAt)
+- [x] T024 [P] [US1] Create shared/src/types/mcp-server.types.ts with MCPServer interface (id, name, slug, datasourceId, config, status, mcpEndpoint, createdAt, updatedAt)
+- [x] T025 [P] [US1] Create shared/src/types/canvas-node.types.ts with CanvasNode interface (id, nodeId, type, positionX, positionY, datasourceId, mcpServerId, toolId, createdAt, updatedAt)
+- [x] T026 [P] [US1] Create shared/src/dtos/create-datasource.dto.ts with validation rules (name, type='mysql', host, port, database, username, password)
+- [x] T027 [P] [US1] Create shared/src/dtos/create-mcp-server.dto.ts with validation rules (datasourceId)
+- [x] T028 [P] [US1] Create shared/src/dtos/create-canvas-node.dto.ts with validation rules (nodeId, type, positionX, positionY, datasourceId?, mcpServerId?, toolId?)
+- [x] T029 [P] [US1] Create shared/src/dtos/update-canvas-node.dto.ts with validation rules (positionX?, positionY?)
 
 ### Backend: Datasources Module (US1)
 
-- [ ] T030 [P] [US1] Create backend/src/datasources/entities/datasource.entity.ts with TypeORM entity (uuid primary key, name unique, type='mysql', host, port, database, username, encrypted password, status enum, timestamps)
-- [ ] T031 [US1] Create backend/src/datasources/datasources.service.ts with methods: create (test connection, encrypt password, save), findAll, findOne, update (retest connection, re-encrypt password if changed), delete, testConnection (MySQL connection validation)
-- [ ] T032 [US1] Create backend/src/datasources/datasources.controller.ts with REST endpoints: POST /api/datasources (create), GET /api/datasources (list), GET /api/datasources/:id (get by ID), PATCH /api/datasources/:id (update), DELETE /api/datasources/:id (delete), POST /api/datasources/:id/test (test connection)
-- [ ] T033 [US1] Create backend/src/datasources/datasources.module.ts importing TypeOrmModule.forFeature([Datasource]), exporting DatasourcesService
+- [x] T030 [P] [US1] Create backend/src/datasources/entities/datasource.entity.ts with TypeORM entity (uuid primary key, name unique, type='mysql', host, port, database, username, encrypted password, status enum, timestamps)
+- [x] T031 [US1] Create backend/src/datasources/datasources.service.ts with methods: create (test connection, encrypt password, save), findAll, findOne, update (retest connection, re-encrypt password if changed), delete, testConnection (MySQL connection validation)
+- [x] T032 [US1] Create backend/src/datasources/datasources.controller.ts with REST endpoints: POST /api/datasources (create), GET /api/datasources (list), GET /api/datasources/:id (get by ID), PATCH /api/datasources/:id (update), DELETE /api/datasources/:id (delete), POST /api/datasources/:id/test (test connection)
+- [x] T033 [US1] Create backend/src/datasources/datasources.module.ts importing TypeOrmModule.forFeature([Datasource]), exporting DatasourcesService
 
 ### Backend: MCP Servers Module (US1)
 
-- [ ] T034 [P] [US1] Create backend/src/mcp-servers/entities/mcp-server.entity.ts with TypeORM entity (uuid primary key, name, slug unique, datasourceId foreign key, config JSON nullable, status enum='draft'|'active'|'error', timestamps)
-- [ ] T035 [US1] Create backend/src/mcp-servers/mcp-servers.service.ts with methods: create (generate slug from datasource name with conflict resolution, save), findAll, findOne, update (set status to 'draft'), delete, activate (start MCP server at /mcp/:slug endpoint)
-- [ ] T036 [US1] Create backend/src/mcp-servers/mcp-runtime.service.ts with methods: startServer (initialize MCP SDK Server, register at /mcp/:slug with JSON-RPC transport), stopServer, reloadAllServers (for backend startup), getServerStatus
-- [ ] T037 [US1] Create backend/src/mcp-servers/mcp-servers.controller.ts with REST endpoints: POST /api/mcp-servers (create), GET /api/mcp-servers (list with datasourceId filter), GET /api/mcp-servers/:id (get by ID), PATCH /api/mcp-servers/:id (update), DELETE /api/mcp-servers/:id (delete), POST /api/mcp-servers/:id/activate (activate server)
-- [ ] T038 [US1] Create backend/src/mcp-servers/mcp-servers.module.ts importing TypeOrmModule.forFeature([MCPServer]), DatasourcesModule, exporting MCPServersService and MCPRuntimeService
-- [ ] T039 [US1] Update backend/src/app.module.ts to import MCPServersModule and configure MCP protocol endpoint middleware for /mcp/:slug routes
+- [x] T034 [P] [US1] Create backend/src/mcp-servers/entities/mcp-server.entity.ts with TypeORM entity (uuid primary key, name, slug unique, datasourceId foreign key, config JSON nullable, status enum='draft'|'active'|'error', timestamps)
+- [x] T035 [US1] Create backend/src/mcp-servers/mcp-servers.service.ts with methods: create (generate slug from datasource name with conflict resolution, save), findAll, findOne, update (set status to 'draft'), delete, activate (start MCP server at /mcp/:slug endpoint)
+- [x] T036 [US1] Create backend/src/mcp-servers/mcp-runtime.service.ts with methods: startServer (initialize MCP SDK Server, register at /mcp/:slug with JSON-RPC transport), stopServer, reloadAllServers (for backend startup), getServerStatus
+- [x] T037 [US1] Create backend/src/mcp-servers/mcp-servers.controller.ts with REST endpoints: POST /api/mcp-servers (create), GET /api/mcp-servers (list with datasourceId filter), GET /api/mcp-servers/:id (get by ID), PATCH /api/mcp-servers/:id (update), DELETE /api/mcp-servers/:id (delete), POST /api/mcp-servers/:id/activate (activate server)
+- [x] T038 [US1] Create backend/src/mcp-servers/mcp-servers.module.ts importing TypeOrmModule.forFeature([MCPServer]), DatasourcesModule, exporting MCPServersService and MCPRuntimeService
+- [x] T039 [US1] Update backend/src/app.module.ts to import MCPServersModule and configure MCP protocol endpoint middleware for /mcp/:slug routes
 
 ### Backend: Canvas Module (US1)
 
-- [ ] T040 [P] [US1] Create backend/src/canvas/entities/canvas-node.entity.ts with TypeORM entity (uuid primary key, nodeId unique, type enum='datasource'|'mcpServer'|'tool'|'add', positionX, positionY, datasourceId nullable foreign key, mcpServerId nullable foreign key, toolId nullable foreign key, timestamps)
-- [ ] T041 [US1] Create backend/src/canvas/canvas.service.ts with methods: create, findAll, findByNodeId, findByEntity (datasourceId/mcpServerId/toolId), updatePosition, batchUpdatePositions, delete
-- [ ] T042 [US1] Create backend/src/canvas/canvas.controller.ts with REST endpoints: POST /api/canvas/nodes (create), GET /api/canvas/nodes (list all), GET /api/canvas/nodes/entity/:entityType/:entityId (get by entity), PATCH /api/canvas/nodes/:nodeId (update position), PATCH /api/canvas/nodes/batch (batch update positions), DELETE /api/canvas/nodes/:nodeId (delete)
-- [ ] T043 [US1] Create backend/src/canvas/canvas.module.ts importing TypeOrmModule.forFeature([CanvasNode]), exporting CanvasService
+- [x] T040 [P] [US1] Create backend/src/canvas/entities/canvas-node.entity.ts with TypeORM entity (uuid primary key, nodeId unique, type enum='datasource'|'mcpServer'|'tool'|'add', positionX, positionY, datasourceId nullable foreign key, mcpServerId nullable foreign key, toolId nullable foreign key, timestamps)
+- [x] T041 [US1] Create backend/src/canvas/canvas.service.ts with methods: create, findAll, findByNodeId, findByEntity (datasourceId/mcpServerId/toolId), updatePosition, batchUpdatePositions, delete
+- [x] T042 [US1] Create backend/src/canvas/canvas.controller.ts with REST endpoints: POST /api/canvas/nodes (create), GET /api/canvas/nodes (list all), GET /api/canvas/nodes/entity/:entityType/:entityId (get by entity), PATCH /api/canvas/nodes/:nodeId (update position), PATCH /api/canvas/nodes/batch (batch update positions), DELETE /api/canvas/nodes/:nodeId (delete)
+- [x] T043 [US1] Create backend/src/canvas/canvas.module.ts importing TypeOrmModule.forFeature([CanvasNode]), exporting CanvasService
 
 ### Frontend: React Flow Canvas (US1)
 
