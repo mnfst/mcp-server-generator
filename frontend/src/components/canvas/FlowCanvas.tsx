@@ -19,12 +19,13 @@ import { AddNode } from './AddNode';
 import { DatasourceNode } from './DatasourceNode';
 import { MCPServerNode } from './MCPServerNode';
 import { apiUrl } from '@/lib/api';
+import { CanvasNodeType } from 'shared';
 
 // Custom node types mapping
 const nodeTypes = {
-  add: AddNode,
-  datasource: DatasourceNode,
-  mcpServer: MCPServerNode,
+  [CanvasNodeType.ADD]: AddNode,
+  [CanvasNodeType.DATASOURCE]: DatasourceNode,
+  [CanvasNodeType.MCP_SERVER]: MCPServerNode,
 };
 
 /**
@@ -82,7 +83,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
         if (flowNodes.length === 0) {
           flowNodes.push({
             id: 'add-datasource-initial',
-            type: 'add',
+            type: CanvasNodeType.ADD,
             position: { x: 100, y: 100 },
             data: { label: 'Add Datasource', onClick: onCreateDatasource },
           });
@@ -96,7 +97,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
         setNodes([
           {
             id: 'add-datasource-initial',
-            type: 'add',
+            type: CanvasNodeType.ADD,
             position: { x: 100, y: 100 },
             data: { label: 'Add Datasource', onClick: onCreateDatasource },
           },

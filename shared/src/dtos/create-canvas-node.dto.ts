@@ -1,3 +1,6 @@
+import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { CanvasNodeType } from '../enums/canvas-node-type.enum';
+
 /**
  * Data Transfer Object for creating a new canvas node.
  *
@@ -33,19 +36,22 @@ export class CreateCanvasNodeDto {
    *
    * @example 'node-123' | 'datasource-node-abc'
    */
+  @IsString()
+  @IsNotEmpty()
   nodeId!: string;
 
   /**
    * The type of entity this canvas node represents.
    *
-   * - 'datasource': A database connection node
-   * - 'mcpServer': An MCP server instance node
-   * - 'tool': A tool or function node
-   * - 'add': A button node for adding new elements
+   * - DATASOURCE: A database connection node
+   * - MCP_SERVER: An MCP server instance node
+   * - TOOL: A tool or function node
+   * - ADD: A button node for adding new elements
    *
-   * @example 'datasource' | 'mcpServer' | 'tool' | 'add'
+   * @example CanvasNodeType.DATASOURCE | CanvasNodeType.MCP_SERVER
    */
-  type!: 'datasource' | 'mcpServer' | 'tool' | 'add';
+  @IsEnum(CanvasNodeType)
+  type!: CanvasNodeType;
 
   /**
    * The horizontal position of the node on the canvas.
@@ -53,6 +59,7 @@ export class CreateCanvasNodeDto {
    *
    * @example 100 | 250.5
    */
+  @IsNumber()
   positionX!: number;
 
   /**
@@ -61,6 +68,7 @@ export class CreateCanvasNodeDto {
    *
    * @example 200 | 350.25
    */
+  @IsNumber()
   positionY!: number;
 
   /**
@@ -70,6 +78,8 @@ export class CreateCanvasNodeDto {
    * @optional
    * @example '123e4567-e89b-12d3-a456-426614174000'
    */
+  @IsOptional()
+  @IsUUID()
   datasourceId?: string;
 
   /**
@@ -79,6 +89,8 @@ export class CreateCanvasNodeDto {
    * @optional
    * @example '789e4567-e89b-12d3-a456-426614174000'
    */
+  @IsOptional()
+  @IsUUID()
   mcpServerId?: string;
 
   /**
@@ -88,5 +100,7 @@ export class CreateCanvasNodeDto {
    * @optional
    * @example 'abc12345-e89b-12d3-a456-426614174000'
    */
+  @IsOptional()
+  @IsUUID()
   toolId?: string;
 }

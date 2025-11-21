@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { createConnection } from 'mysql2/promise';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 import { Datasource } from './entities/datasource.entity';
-import { CreateDatasourceDto } from 'shared';
+import { CreateDatasourceDto, CanvasNodeType } from 'shared';
 import { CanvasService } from '../canvas/canvas.service';
 
 @Injectable()
@@ -22,7 +22,12 @@ export class DatasourcesService {
     if (!encryptionKey) {
       throw new Error('CREDENTIALS_ENCRYPTION_KEY environment variable is required');
     }
-    this.key = scryptSync(encryptionKey, 'salt', 32);
+    if (encryptionKey.length < 32) {
+      throw new Error('CREDENTIALS_ENCRYPTION_KEY must be at least 32 characters long');
+    }
+    // Use a cryptographically secure salt derived from the key itself
+    const salt = Buffer.from(encryptionKey.substring(0, 16));
+    this.key = scryptSync(encryptionKey, salt, 32);
   }
 
   /**
@@ -101,7 +106,7 @@ export class DatasourcesService {
     // Automatically create a canvas node for this datasource
     await this.canvasService.create({
       nodeId: `datasource-${savedDatasource.id}`,
-      type: 'datasource',
+      type: CanvasNodeType.DATASOURCE,
       positionX: 100,
       positionY: 100,
       datasourceId: savedDatasource.id,

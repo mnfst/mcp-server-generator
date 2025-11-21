@@ -1,7 +1,9 @@
+import { CanvasNodeType } from '../enums/canvas-node-type.enum';
+
 export interface CanvasNode {
   id: string;
   nodeId: string;
-  type: 'datasource' | 'mcpServer' | 'tool' | 'add';
+  type: CanvasNodeType;
   positionX: number;
   positionY: number;
   datasourceId: string | null;
@@ -10,5 +12,3 @@ export interface CanvasNode {
   createdAt: Date;
   updatedAt: Date;
 }
-
-export type CanvasNodeType = 'datasource' | 'mcpServer' | 'tool' | 'add';

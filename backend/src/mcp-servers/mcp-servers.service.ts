@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MCPServer } from './entities/mcp-server.entity';
-import { CreateMCPServerDto } from 'shared';
+import { CreateMCPServerDto, MCPServerStatus, CanvasNodeType } from 'shared';
 import { DatasourcesService } from '../datasources/datasources.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
 import { CanvasService } from '../canvas/canvas.service';
@@ -66,7 +66,7 @@ export class MCPServersService {
       slug,
       datasourceId: createMCPServerDto.datasourceId,
       config: null,
-      status: 'draft',
+      status: MCPServerStatus.DRAFT,
       mcpEndpoint: `/mcp/${slug}`,
     });
 
@@ -75,7 +75,7 @@ export class MCPServersService {
     // Automatically create a canvas node for this MCP server
     await this.canvasService.create({
       nodeId: `mcpServer-${savedServer.id}`,
-      type: 'mcpServer',
+      type: CanvasNodeType.MCP_SERVER,
       positionX: 300,
       positionY: 100,
       mcpServerId: savedServer.id,
@@ -140,7 +140,7 @@ export class MCPServersService {
   async update(id: string, updateData: Partial<MCPServer>): Promise<MCPServer> {
     const mcpServer = await this.findOne(id);
     Object.assign(mcpServer, updateData);
-    mcpServer.status = 'draft';
+    mcpServer.status = MCPServerStatus.DRAFT;
     return this.mcpServerRepository.save(mcpServer);
   }
 
@@ -156,7 +156,7 @@ export class MCPServersService {
     const mcpServer = await this.findOne(id);
 
     // Stop the server if it's running
-    if (mcpServer.status === 'active') {
+    if (mcpServer.status === MCPServerStatus.ACTIVE) {
       await this.mcpRuntimeService.stopServer(mcpServer.slug);
     }
 
@@ -185,10 +185,10 @@ export class MCPServersService {
         version: '1.0.0',
       });
 
-      mcpServer.status = 'active';
+      mcpServer.status = MCPServerStatus.ACTIVE;
       return this.mcpServerRepository.save(mcpServer);
     } catch (error) {
-      mcpServer.status = 'error';
+      mcpServer.status = MCPServerStatus.ERROR;
       await this.mcpServerRepository.save(mcpServer);
       throw new BadRequestException('Failed to activate MCP server');
     }

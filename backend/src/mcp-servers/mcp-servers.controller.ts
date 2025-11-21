@@ -14,6 +14,7 @@ import { Request, Response } from 'express';
 import { MCPServersService } from './mcp-servers.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
 import { CreateMCPServerDto } from 'shared';
+import { MCPServer } from './entities/mcp-server.entity';
 
 @Controller('api/mcp-servers')
 export class MCPServersController {
@@ -75,7 +76,7 @@ export class MCPServersController {
    * @throws {NotFoundException} When no MCP server exists with the provided ID
    */
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateData: Partial<any>) {
+  update(@Param('id') id: string, @Body() updateData: Partial<MCPServer>) {
     return this.mcpServersService.update(id, updateData);
   }
 
