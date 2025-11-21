@@ -47,6 +47,12 @@ logs/
 *.tsbuildinfo
 .tsbuildinfo
 
+# TypeScript compiled files in source directories (should only be in dist/)
+shared/src/**/*.js
+shared/src/**/*.js.map
+shared/src/**/*.d.ts
+shared/src/**/*.d.ts.map
+
 # Temporary files
 *.tmp
 *.temp
