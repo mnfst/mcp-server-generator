@@ -1,3 +1,5 @@
+import { IsNumber, IsOptional } from 'class-validator';
+
 /**
  * Data Transfer Object for updating an existing canvas node.
  *
@@ -32,6 +34,8 @@ export class UpdateCanvasNodeDto {
    * @optional Only include if the horizontal position needs to be updated
    * @example 150 | 275.5
    */
+  @IsOptional()
+  @IsNumber()
   positionX?: number;
 
   /**
@@ -41,5 +45,7 @@ export class UpdateCanvasNodeDto {
    * @optional Only include if the vertical position needs to be updated
    * @example 250 | 425.75
    */
+  @IsOptional()
+  @IsNumber()
   positionY?: number;
 }

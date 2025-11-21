@@ -80,22 +80,22 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
 
       <div
         onClick={data.onClick}
-        className={`px-4 py-3 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer ${getStatusColor()}`}
-        style={{ minWidth: '220px' }}
+        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer ${getStatusColor()}`}
+        style={{ minWidth: '200px', minHeight: '180px' }}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex flex-col items-center gap-3 h-full">
           {/* Icon */}
-          <div className="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <Database className="w-5 h-5 text-primary" />
+          <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Database className="w-6 h-6 text-primary" />
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="flex-1 flex flex-col justify-center w-full text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
               <h3 className="font-semibold text-sm truncate">{datasource.name}</h3>
               {getStatusIcon()}
             </div>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground truncate px-2">
               {datasource.host}:{datasource.port}/{datasource.database}
             </p>
             <p className="text-xs text-muted-foreground mt-1 capitalize">

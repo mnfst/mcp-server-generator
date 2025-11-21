@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Server, CheckCircle2, FileEdit, AlertCircle } from 'lucide-react';
-import { MCPServer } from 'shared';
+import { MCPServer, MCPServerStatus } from 'shared';
 
 /**
  * Data structure for MCPServerNode component.
@@ -41,11 +41,11 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
    */
   const getStatusIcon = () => {
     switch (mcpServer.status) {
-      case 'active':
+      case MCPServerStatus.ACTIVE:
         return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-      case 'error':
+      case MCPServerStatus.ERROR:
         return <AlertCircle className="w-4 h-4 text-red-500" />;
-      case 'draft':
+      case MCPServerStatus.DRAFT:
       default:
         return <FileEdit className="w-4 h-4 text-yellow-500" />;
     }
@@ -58,11 +58,11 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
    */
   const getStatusColor = () => {
     switch (mcpServer.status) {
-      case 'active':
+      case MCPServerStatus.ACTIVE:
         return 'border-green-500';
-      case 'error':
+      case MCPServerStatus.ERROR:
         return 'border-red-500';
-      case 'draft':
+      case MCPServerStatus.DRAFT:
       default:
         return 'border-yellow-500';
     }
@@ -93,30 +93,30 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
 
       <div
         onClick={data.onClick}
-        className={`px-4 py-3 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer ${getStatusColor()}`}
-        style={{ minWidth: '220px' }}
+        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer ${getStatusColor()}`}
+        style={{ minWidth: '200px', minHeight: '180px' }}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex flex-col items-center gap-3 h-full">
           {/* Icon */}
-          <div className="w-10 h-10 rounded-md bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-            <Server className="w-5 h-5 text-blue-500" />
+          <div className="w-12 h-12 rounded-md bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+            <Server className="w-6 h-6 text-blue-500" />
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="flex-1 flex flex-col justify-center w-full text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
               <h3 className="font-semibold text-sm truncate">{mcpServer.name}</h3>
               {getStatusIcon()}
             </div>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground truncate px-2">
               /{mcpServer.slug}
             </p>
-            {mcpServer.status === 'active' && (
-              <p className="text-xs text-blue-500 mt-1 truncate font-mono">
+            {mcpServer.status === MCPServerStatus.ACTIVE && (
+              <p className="text-xs text-blue-500 mt-1 truncate font-mono px-2">
                 {getEndpointUrl()}
               </p>
             )}
-            {mcpServer.status === 'draft' && (
+            {mcpServer.status === MCPServerStatus.DRAFT && (
               <p className="text-xs text-muted-foreground mt-1">
                 Not yet activated
               </p>
