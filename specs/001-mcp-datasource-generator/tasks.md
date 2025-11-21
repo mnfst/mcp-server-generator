@@ -101,32 +101,32 @@
 
 ### Frontend: React Flow Canvas (US1)
 
-- [ ] T044 [P] [US1] Create frontend/src/components/canvas/FlowCanvas.tsx with React Flow instance, nodes and edges state management, zoom/pan/drag handlers, onNodesChange handler to update positions via API, TanStack Query hooks for fetching nodes from /api/canvas/nodes
-- [ ] T045 [P] [US1] Create frontend/src/components/canvas/AddNode.tsx custom React Flow node component displaying "+" icon with label ("Add Datasource" or "Create MCP Server"), onClick handler to open appropriate dialog
-- [ ] T046 [P] [US1] Create frontend/src/components/canvas/DatasourceNode.tsx custom React Flow node component displaying datasource icon, name, and status, onClick handler to open datasource details (not implemented in US1)
-- [ ] T047 [P] [US1] Create frontend/src/components/canvas/MCPServerNode.tsx custom React Flow node component displaying MCP server icon, name, and status, onClick handler to open MCP server menu dialog (not implemented in US1, placeholder for US2)
+- [x] T044 [P] [US1] Create frontend/src/components/canvas/FlowCanvas.tsx with React Flow instance, nodes and edges state management, zoom/pan/drag handlers, onNodesChange handler to update positions via API, TanStack Query hooks for fetching nodes from /api/canvas/nodes
+- [x] T045 [P] [US1] Create frontend/src/components/canvas/AddNode.tsx custom React Flow node component displaying "+" icon with label ("Add Datasource" or "Create MCP Server"), onClick handler to open appropriate dialog
+- [x] T046 [P] [US1] Create frontend/src/components/canvas/DatasourceNode.tsx custom React Flow node component displaying datasource icon, name, and status, onClick handler to open datasource details (not implemented in US1)
+- [x] T047 [P] [US1] Create frontend/src/components/canvas/MCPServerNode.tsx custom React Flow node component displaying MCP server icon, name, and status, onClick handler to open MCP server menu dialog (not implemented in US1, placeholder for US2)
 
 ### Frontend: Dialogs (US1)
 
-- [ ] T048 [P] [US1] Create frontend/src/components/dialogs/DatasourceDialog.tsx with shadcn/ui Dialog containing form fields (name, type='mysql' readonly, host, port, database, username, password), "Test Connection" button calling POST /api/datasources/:id/test, "Connect" button calling POST /api/datasources with validation, success callback to create canvas node
-- [ ] T049 [P] [US1] Create frontend/src/components/dialogs/MCPServerDialog.tsx with shadcn/ui Dialog containing form field (name), "Create" button calling POST /api/mcp-servers with datasourceId, success callback to create canvas node and activate server via POST /api/mcp-servers/:id/activate
+- [x] T048 [P] [US1] Create frontend/src/components/dialogs/DatasourceDialog.tsx with shadcn/ui Dialog containing form fields (name, type='mysql' readonly, host, port, database, username, password), "Test Connection" button calling POST /api/datasources/:id/test, "Connect" button calling POST /api/datasources with validation, success callback to create canvas node
+- [x] T049 [P] [US1] Create frontend/src/components/dialogs/MCPServerDialog.tsx with shadcn/ui Dialog containing form field (name), "Create" button calling POST /api/mcp-servers with datasourceId, success callback to create canvas node and activate server via POST /api/mcp-servers/:id/activate
 
 ### Frontend: API Integration (US1)
 
-- [ ] T050 [US1] Create TanStack Query mutation hooks in frontend/src/services/api.ts: useCreateDatasource, useTestDatasource, useCreateMCPServer, useActivateMCPServer, useCreateCanvasNode, useUpdateCanvasNodePosition
-- [ ] T051 [US1] Create TanStack Query query hooks in frontend/src/services/api.ts: useCanvasNodes (GET /api/canvas/nodes), useDatasources (GET /api/datasources), useMCPServers (GET /api/mcp-servers)
+- [x] T050 [US1] Create TanStack Query mutation hooks in frontend/src/services/api.ts: useCreateDatasource, useTestDatasource, useCreateMCPServer, useActivateMCPServer, useCreateCanvasNode, useUpdateCanvasNodePosition
+- [x] T051 [US1] Create TanStack Query query hooks in frontend/src/services/api.ts: useCanvasNodes (GET /api/canvas/nodes), useDatasources (GET /api/datasources), useMCPServers (GET /api/mcp-servers)
 
 ### Frontend: Main Canvas Page (US1)
 
-- [ ] T052 [US1] Create frontend/src/pages/CanvasPage.tsx as main application page containing FlowCanvas component, managing dialog open/close state, handling canvas node creation workflow (AddNode click → open dialog → create entity → create canvas node with dagre auto-layout → close dialog)
-- [ ] T053 [US1] Update frontend/src/App.tsx to render CanvasPage as default route
+- [x] T052 [US1] Create frontend/src/pages/CanvasPage.tsx as main application page containing FlowCanvas component, managing dialog open/close state, handling canvas node creation workflow (AddNode click → open dialog → create entity → create canvas node with dagre auto-layout → close dialog)
+- [x] T053 [US1] Update frontend/src/App.tsx to render CanvasPage as default route
 
 ### Integration & Canvas Workflow (US1)
 
-- [ ] T054 [US1] Implement canvas workflow: initial "Add Datasource" AddNode rendered on empty canvas (nodeId: 'add-datasource', type: 'add', position via dagre)
-- [ ] T055 [US1] Implement datasource creation workflow: AddNode click → DatasourceDialog opens → user enters credentials → test connection → create Datasource entity → create DatasourceNode canvas node (nodeId: 'datasource-{uuid}', type: 'datasource') → create AddNode for "Create MCP Server" connected to datasource (nodeId: 'add-mcpserver-{datasource-uuid}', type: 'add') → close dialog
-- [ ] T056 [US1] Implement MCP server creation workflow: AddNode click → MCPServerDialog opens → user enters name → create MCPServer entity → activate server at /mcp/:slug → create MCPServerNode canvas node (nodeId: 'mcpserver-{uuid}', type: 'mcpServer') → close dialog
-- [ ] T057 [US1] Implement backend startup auto-reload: update backend/src/main.ts to call MCPRuntimeService.reloadAllServers() on application bootstrap to restore all MCP servers from database
+- [x] T054 [US1] Implement canvas workflow: initial "Add Datasource" AddNode rendered on empty canvas (nodeId: 'add-datasource', type: 'add', position via dagre)
+- [x] T055 [US1] Implement datasource creation workflow: AddNode click → DatasourceDialog opens → user enters credentials → test connection → create Datasource entity → create DatasourceNode canvas node (nodeId: 'datasource-{uuid}', type: 'datasource') → create AddNode for "Create MCP Server" connected to datasource (nodeId: 'add-mcpserver-{datasource-uuid}', type: 'add') → close dialog
+- [x] T056 [US1] Implement MCP server creation workflow: AddNode click → MCPServerDialog opens → user enters name → create MCPServer entity → activate server at /mcp/:slug → create MCPServerNode canvas node (nodeId: 'mcpserver-{uuid}', type: 'mcpServer') → close dialog
+- [x] T057 [US1] Implement backend startup auto-reload: update backend/src/main.ts to call MCPRuntimeService.reloadAllServers() on application bootstrap to restore all MCP servers from database
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can connect database via canvas, generate MCP server, and access it at /mcp/:serverSlug with empty tools list
 
@@ -140,54 +140,54 @@
 
 ### Backend: Shared Types & DTOs (US2)
 
-- [ ] T058 [P] [US2] Create shared/src/types/tool.types.ts with Tool interface (id, name, description, mcpServerId, prompt, sqlQuery, parameters JSON, createdAt, updatedAt)
-- [ ] T059 [P] [US2] Create shared/src/types/schema.types.ts with DatabaseSchema, Table, Column, ForeignKey interfaces for schema introspection results
-- [ ] T060 [P] [US2] Create shared/src/dtos/create-tool.dto.ts with validation rules (mcpServerId, name, description, prompt)
+- [x] T058 [P] [US2] Create shared/src/types/tool.types.ts with Tool interface (id, name, description, mcpServerId, prompt, sqlQuery, parameters JSON, createdAt, updatedAt)
+- [x] T059 [P] [US2] Create shared/src/types/schema.types.ts with DatabaseSchema, Table, Column, ForeignKey interfaces for schema introspection results
+- [x] T060 [P] [US2] Create shared/src/dtos/create-tool.dto.ts with validation rules (mcpServerId, name, description, prompt)
 
 ### Backend: Query Generation Module (US2)
 
-- [ ] T061 [P] [US2] Create backend/src/query-generation/query-generation.service.ts with method: generateQuery (accepts datasourceId and natural language prompt, fetches schema from SchemaService, constructs OpenAI prompt with schema context, calls OpenAI API with structured JSON response request, parses response for SQL query and parameters, validates SELECT-only constraint, returns query and parameters)
-- [ ] T062 [P] [US2] Create backend/src/query-generation/query-generation.module.ts as standalone module exporting QueryGenerationService (no database dependencies)
+- [x] T061 [P] [US2] Create backend/src/query-generation/query-generation.service.ts with method: generateQuery (accepts datasourceId and natural language prompt, fetches schema from SchemaService, constructs OpenAI prompt with schema context, calls OpenAI API with structured JSON response request, parses response for SQL query and parameters, validates SELECT-only constraint, returns query and parameters)
+- [x] T062 [P] [US2] Create backend/src/query-generation/query-generation.module.ts as standalone module exporting QueryGenerationService (no database dependencies)
 
 ### Backend: Schema Module (US2)
 
-- [ ] T063 [P] [US2] Create backend/src/schema/schema.service.ts with methods: getSchema (query MySQL information_schema.TABLES, information_schema.COLUMNS, information_schema.KEY_COLUMN_USAGE for datasource, cache results in memory keyed by datasourceId), refreshSchema (invalidate cache and re-fetch), parseSchemaResults (transform information_schema rows to normalized DatabaseSchema type)
-- [ ] T064 [P] [US2] Create backend/src/schema/schema.controller.ts with REST endpoints: GET /api/schema/:datasourceId (get schema), POST /api/schema/:datasourceId/refresh (refresh schema cache)
-- [ ] T065 [P] [US2] Create backend/src/schema/schema.module.ts importing DatasourcesModule, exporting SchemaService
+- [x] T063 [P] [US2] Create backend/src/schema/schema.service.ts with methods: getSchema (query MySQL information_schema.TABLES, information_schema.COLUMNS, information_schema.KEY_COLUMN_USAGE for datasource, cache results in memory keyed by datasourceId), refreshSchema (invalidate cache and re-fetch), parseSchemaResults (transform information_schema rows to normalized DatabaseSchema type)
+- [x] T064 [P] [US2] Create backend/src/schema/schema.controller.ts with REST endpoints: GET /api/schema/:datasourceId (get schema), POST /api/schema/:datasourceId/refresh (refresh schema cache)
+- [x] T065 [P] [US2] Create backend/src/schema/schema.module.ts importing DatasourcesModule, exporting SchemaService
 
 ### Backend: Tools Module (US2)
 
-- [ ] T066 [P] [US2] Create backend/src/tools/entities/tool.entity.ts with TypeORM entity (uuid primary key, name, description, mcpServerId foreign key, prompt text, sqlQuery text, parameters JSON nullable, timestamps, unique constraint on mcpServerId+name)
-- [ ] T067 [US2] Create backend/src/tools/tools.service.ts with methods: create (validate name uniqueness within server, save tool, update MCP server status to 'draft'), findAll (with mcpServerId filter), findOne, update (regenerate SQL if prompt changed, update MCP server status to 'draft'), delete, testTool (execute SQL query with parameter values, return first 10 rows with execution time)
-- [ ] T068 [US2] Create backend/src/tools/tools.controller.ts with REST endpoints: POST /api/tools (create - calls QueryGenerationService.generateQuery then saves tool), GET /api/tools (list with mcpServerId filter), GET /api/tools/:id (get by ID), PATCH /api/tools/:id (update), DELETE /api/tools/:id (delete), POST /api/tools/:id/test (test tool with parameters)
-- [ ] T069 [US2] Create backend/src/tools/tools.module.ts importing TypeOrmModule.forFeature([Tool]), MCPServersModule, QueryGenerationModule, DatasourcesModule, exporting ToolsService
-- [ ] T070 [US2] Update backend/src/mcp-servers/mcp-runtime.service.ts method startServer to fetch all tools for MCPServer and register them as MCP SDK tools with proper parameter schemas
+- [x] T066 [P] [US2] Create backend/src/tools/entities/tool.entity.ts with TypeORM entity (uuid primary key, name, description, mcpServerId foreign key, prompt text, sqlQuery text, parameters JSON nullable, timestamps, unique constraint on mcpServerId+name)
+- [x] T067 [US2] Create backend/src/tools/tools.service.ts with methods: create (validate name uniqueness within server, save tool, update MCP server status to 'draft'), findAll (with mcpServerId filter), findOne, update (regenerate SQL if prompt changed, update MCP server status to 'draft'), delete, testTool (execute SQL query with parameter values, return first 10 rows with execution time)
+- [x] T068 [US2] Create backend/src/tools/tools.controller.ts with REST endpoints: POST /api/tools (create - calls QueryGenerationService.generateQuery then saves tool), GET /api/tools (list with mcpServerId filter), GET /api/tools/:id (get by ID), PATCH /api/tools/:id (update), DELETE /api/tools/:id (delete), POST /api/tools/:id/test (test tool with parameters)
+- [x] T069 [US2] Create backend/src/tools/tools.module.ts importing TypeOrmModule.forFeature([Tool]), MCPServersModule, QueryGenerationModule, DatasourcesModule, exporting ToolsService
+- [x] T070 [US2] Update backend/src/mcp-servers/mcp-runtime.service.ts method startServer to fetch all tools for MCPServer and register them as MCP SDK tools with proper parameter schemas
 
 ### Frontend: Schema View (US2)
 
-- [ ] T071 [P] [US2] Create frontend/src/components/schema/SchemaListView.tsx with shadcn/ui Accordion displaying tables as accordion items, each table showing columns with data types, foreign keys indicated with arrow icon and target table, search input to filter tables/columns, highlighting prop to highlight tables/columns referenced in SQL query
-- [ ] T072 [P] [US2] Create frontend/src/components/dialogs/SchemaViewDialog.tsx with shadcn/ui Dialog containing SchemaListView component, fetching schema via GET /api/schema/:datasourceId, "Refresh" button calling POST /api/schema/:datasourceId/refresh
+- [x] T071 [P] [US2] Create frontend/src/components/schema/SchemaListView.tsx with shadcn/ui Accordion displaying tables as accordion items, each table showing columns with data types, foreign keys indicated with arrow icon and target table, search input to filter tables/columns, highlighting prop to highlight tables/columns referenced in SQL query
+- [x] T072 [P] [US2] Create frontend/src/components/dialogs/SchemaViewDialog.tsx with shadcn/ui Dialog containing SchemaListView component, fetching schema via GET /api/schema/:datasourceId, "Refresh" button calling POST /api/schema/:datasourceId/refresh
 
 ### Frontend: Tool Creation (US2)
 
-- [ ] T073 [P] [US2] Create frontend/src/components/dialogs/ToolDialog.tsx with shadcn/ui Dialog containing: natural language prompt textarea, "Generate SQL" button calling POST /api/tools with prompt (which internally calls query generation), generated SQL display area (read-only with syntax highlighting), tool name and description input fields, "Test" button calling POST /api/tools/:id/test with parameter values, sample results display, "Save" button to save tool, "Create Another Tool" button to reset form for bulk creation
-- [ ] T074 [P] [US2] Create frontend/src/components/canvas/ToolNode.tsx custom React Flow node component displaying tool icon and name, onClick handler to open tool details dialog (placeholder for US3)
+- [x] T073 [P] [US2] Create frontend/src/components/dialogs/ToolDialog.tsx with shadcn/ui Dialog containing: natural language prompt textarea, "Generate SQL" button calling POST /api/tools with prompt (which internally calls query generation), generated SQL display area (read-only with syntax highlighting), tool name and description input fields, "Test" button calling POST /api/tools/:id/test with parameter values, sample results display, "Save" button to save tool, "Create Another Tool" button to reset form for bulk creation
+- [x] T074 [P] [US2] Create frontend/src/components/canvas/ToolNode.tsx custom React Flow node component displaying tool icon and name, onClick handler to open tool details dialog (placeholder for US3)
 
 ### Frontend: API Integration (US2)
 
-- [ ] T075 [US2] Create TanStack Query mutation hooks in frontend/src/services/api.ts: useCreateTool (POST /api/tools), useTestTool (POST /api/tools/:id/test), useRefreshSchema (POST /api/schema/:datasourceId/refresh)
-- [ ] T076 [US2] Create TanStack Query query hooks in frontend/src/services/api.ts: useSchema (GET /api/schema/:datasourceId), useTools (GET /api/tools with mcpServerId filter)
+- [x] T075 [US2] Create TanStack Query mutation hooks in frontend/src/services/api.ts: useCreateTool (POST /api/tools), useTestTool (POST /api/tools/:id/test), useRefreshSchema (POST /api/schema/:datasourceId/refresh)
+- [x] T076 [US2] Create TanStack Query query hooks in frontend/src/services/api.ts: useSchema (GET /api/schema/:datasourceId), useTools (GET /api/tools with mcpServerId filter)
 
 ### Frontend: MCP Server Menu Dialog (US2)
 
-- [ ] T077 [US2] Update frontend/src/components/canvas/MCPServerNode.tsx onClick handler to open MCPServerMenuDialog
-- [ ] T078 [US2] Create frontend/src/components/dialogs/MCPServerMenuDialog.tsx with shadcn/ui Dialog showing two buttons: "Create Tool" (opens ToolDialog) and "View Schema" (opens SchemaViewDialog)
+- [x] T077 [US2] Update frontend/src/components/canvas/MCPServerNode.tsx onClick handler to open MCPServerMenuDialog
+- [x] T078 [US2] Create frontend/src/components/dialogs/MCPServerMenuDialog.tsx with shadcn/ui Dialog showing two buttons: "Create Tool" (opens ToolDialog) and "View Schema" (opens SchemaViewDialog)
 
 ### Integration & Tool Workflow (US2)
 
-- [ ] T079 [US2] Implement tool creation workflow: MCPServerNode click → MCPServerMenuDialog opens → "Create Tool" click → ToolDialog opens → user enters natural language prompt → "Generate SQL" generates query via LLM → user reviews SQL → user enters tool name/description → "Test" executes query and shows results → "Save" creates Tool entity → create ToolNode canvas node (nodeId: 'tool-{uuid}', type: 'tool') connected to MCP server → optionally "Create Another Tool" for bulk creation
-- [ ] T080 [US2] Implement schema view workflow: MCPServerNode click → MCPServerMenuDialog opens → "View Schema" click → SchemaViewDialog opens → display all tables/columns/foreign keys in Accordion → search/filter functionality → keep dialog open while creating tools for reference
-- [ ] T081 [US2] Implement SQL highlighting in schema view: when ToolDialog shows generated SQL, parse table/column references and pass to SchemaListView as highlighted items
+- [x] T079 [US2] Implement tool creation workflow: MCPServerNode click → MCPServerMenuDialog opens → "Create Tool" click → ToolDialog opens → user enters natural language prompt → "Generate SQL" generates query via LLM → user reviews SQL → user enters tool name/description → "Test" executes query and shows results → "Save" creates Tool entity → create ToolNode canvas node (nodeId: 'tool-{uuid}', type: 'tool') connected to MCP server → optionally "Create Another Tool" for bulk creation
+- [x] T080 [US2] Implement schema view workflow: MCPServerNode click → MCPServerMenuDialog opens → "View Schema" click → SchemaViewDialog opens → display all tables/columns/foreign keys in Accordion → search/filter functionality → keep dialog open while creating tools for reference
+- [x] T081 [US2] Implement SQL highlighting in schema view: when ToolDialog shows generated SQL, parse table/column references and pass to SchemaListView as highlighted items
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - users can create tools via natural language, view schema, and test tools
 

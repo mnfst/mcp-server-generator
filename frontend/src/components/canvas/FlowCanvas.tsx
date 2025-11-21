@@ -18,13 +18,18 @@ import dagre from 'dagre';
 import { AddNode } from './AddNode';
 import { DatasourceNode } from './DatasourceNode';
 import { MCPServerNode } from './MCPServerNode';
+import { ToolNode } from './ToolNode';
+import { MCPServerMenuDialog } from '../dialogs/MCPServerMenuDialog';
+import { ToolDialog } from '../dialogs/ToolDialog';
 import { apiUrl } from '@/lib/api';
+import { Tool, Datasource, MCPServer } from 'shared';
 
 // Custom node types mapping
 const nodeTypes = {
   add: AddNode,
   datasource: DatasourceNode,
   mcpServer: MCPServerNode,
+  tool: ToolNode,
 };
 
 /**
@@ -55,28 +60,119 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
   const [nodes, setNodes] = useNodesState<Node>([]);
   const [edges, setEdges] = useEdgesState<Edge>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [menuDialogOpen, setMenuDialogOpen] = useState(false);
+  const [selectedMCPServer, setSelectedMCPServer] = useState<{
+    mcpServer: MCPServer;
+    datasource: Datasource;
+  } | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
 
-  // Fetch canvas nodes from backend
+  // Fetch canvas nodes, datasources, and MCP servers from backend
   useEffect(() => {
     const fetchCanvasData = async () => {
       try {
-        const response = await fetch(apiUrl('/api/canvas/nodes'));
-        if (!response.ok) throw new Error('Failed to fetch canvas nodes');
+        const [canvasResponse, datasourcesResponse, mcpServersResponse, toolsResponse] =
+          await Promise.all([
+            fetch(apiUrl('/api/canvas/nodes')),
+            fetch(apiUrl('/api/datasources')),
+            fetch(apiUrl('/api/mcp-servers')),
+            fetch(apiUrl('/api/tools')),
+          ]);
 
-        const canvasNodes = await response.json();
+        if (!canvasResponse.ok) throw new Error('Failed to fetch canvas nodes');
+
+        const canvasNodes = await canvasResponse.json();
+        const datasources: Datasource[] = datasourcesResponse.ok
+          ? await datasourcesResponse.json()
+          : [];
+        const mcpServers: MCPServer[] = mcpServersResponse.ok
+          ? await mcpServersResponse.json()
+          : [];
+        const tools: Tool[] = toolsResponse.ok ? await toolsResponse.json() : [];
+
+        // Create lookup maps
+        const datasourceMap = new Map(datasources.map((ds) => [ds.id, ds]));
+        const mcpServerMap = new Map(mcpServers.map((mcp) => [mcp.id, mcp]));
+        const toolMap = new Map(tools.map((tool) => [tool.id, tool]));
 
         // Convert backend canvas nodes to React Flow nodes
-        const flowNodes: Node[] = canvasNodes.map((node: any) => ({
-          id: node.nodeId,
-          type: node.type,
-          position: { x: node.positionX, y: node.positionY },
-          draggable: true,
-          data: {
-            datasource: node.datasource,
-            mcpServer: node.mcpServer,
-            toolId: node.toolId,
-          },
-        }));
+        const flowNodes: Node[] = canvasNodes.map((node: any) => {
+          const baseNode = {
+            id: node.nodeId,
+            type: node.type,
+            position: { x: node.positionX, y: node.positionY },
+            draggable: true,
+          };
+
+          if (node.type === 'datasource' && node.datasourceId) {
+            const datasource = datasourceMap.get(node.datasourceId);
+            return {
+              ...baseNode,
+              data: { datasource },
+            };
+          } else if (node.type === 'mcpServer' && node.mcpServerId) {
+            const mcpServer = mcpServerMap.get(node.mcpServerId);
+            const datasource = mcpServer
+              ? datasourceMap.get(mcpServer.datasourceId)
+              : undefined;
+            return {
+              ...baseNode,
+              data: {
+                mcpServer,
+                onClick: () => handleMCPServerClick(mcpServer!, datasource!),
+              },
+            };
+          } else if (node.type === 'tool' && node.toolId) {
+            const tool = toolMap.get(node.toolId);
+            return {
+              ...baseNode,
+              data: {
+                tool,
+                onClick: () => handleToolClick(tool!),
+              },
+            };
+          }
+
+          return baseNode;
+        });
+
+        // Create edges between datasources and MCP servers, and MCP servers and tools
+        const flowEdges: Edge[] = [];
+
+        // Datasource -> MCP Server edges
+        mcpServers.forEach((mcpServer) => {
+          const datasourceNodeId = `datasource-${mcpServer.datasourceId}`;
+          const mcpServerNodeId = `mcpServer-${mcpServer.id}`;
+          if (
+            flowNodes.some((n) => n.id === datasourceNodeId) &&
+            flowNodes.some((n) => n.id === mcpServerNodeId)
+          ) {
+            flowEdges.push({
+              id: `edge-${datasourceNodeId}-${mcpServerNodeId}`,
+              source: datasourceNodeId,
+              target: mcpServerNodeId,
+              animated: true,
+            });
+          }
+        });
+
+        // MCP Server -> Tool edges
+        tools.forEach((tool) => {
+          const mcpServerNodeId = `mcpServer-${tool.mcpServerId}`;
+          const toolNodeId = `tool-${tool.id}`;
+          if (
+            flowNodes.some((n) => n.id === mcpServerNodeId) &&
+            flowNodes.some((n) => n.id === toolNodeId)
+          ) {
+            flowEdges.push({
+              id: `edge-${mcpServerNodeId}-${toolNodeId}`,
+              source: mcpServerNodeId,
+              target: toolNodeId,
+              animated: true,
+            });
+          }
+        });
 
         // Add initial "Add Datasource" node if no nodes exist
         if (flowNodes.length === 0) {
@@ -89,6 +185,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
         }
 
         setNodes(flowNodes);
+        setEdges(flowEdges);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching canvas data:', error);
@@ -107,6 +204,95 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
 
     fetchCanvasData();
   }, [onCreateDatasource]);
+
+  /**
+   * Handle MCP Server node click - opens menu dialog
+   */
+  const handleMCPServerClick = (mcpServer: MCPServer, datasource: Datasource) => {
+    setSelectedMCPServer({ mcpServer, datasource });
+    setMenuDialogOpen(true);
+  };
+
+  /**
+   * Handle Tool node click - opens edit dialog
+   */
+  const handleToolClick = (tool: Tool) => {
+    setSelectedTool(tool);
+    setEditDialogOpen(true);
+  };
+
+  /**
+   * Handle tool deletion - remove node and edges from canvas
+   */
+  const handleToolDeleted = (toolId: string) => {
+    const toolNodeId = `tool-${toolId}`;
+
+    // Remove node
+    setNodes((nds) => nds.filter((n) => n.id !== toolNodeId));
+
+    // Remove edges
+    setEdges((eds) => eds.filter((e) => e.source !== toolNodeId && e.target !== toolNodeId));
+
+    // Close dialog
+    setEditDialogOpen(false);
+    setSelectedTool(null);
+  };
+
+  /**
+   * Handle tool creation - create canvas node and edge
+   */
+  const handleToolCreated = async (tool: Tool) => {
+    try {
+      // Create canvas node for the tool
+      const toolNodeId = `tool-${tool.id}`;
+      const mcpServerNodeId = `mcpServer-${tool.mcpServerId}`;
+
+      // Find MCP server node to position tool near it
+      const mcpServerNode = nodes.find((n) => n.id === mcpServerNodeId);
+      const position = mcpServerNode
+        ? { x: mcpServerNode.position.x + 300, y: mcpServerNode.position.y }
+        : { x: 500, y: 100 };
+
+      // Create canvas node in backend
+      await fetch(apiUrl('/api/canvas/nodes'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nodeId: toolNodeId,
+          type: 'tool',
+          positionX: position.x,
+          positionY: position.y,
+          toolId: tool.id,
+        }),
+      });
+
+      // Add tool node to canvas
+      const newNode: Node = {
+        id: toolNodeId,
+        type: 'tool',
+        position,
+        draggable: true,
+        data: {
+          tool,
+          onClick: () => handleToolClick(tool),
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+
+      // Add edge from MCP server to tool
+      const newEdge: Edge = {
+        id: `edge-${mcpServerNodeId}-${toolNodeId}`,
+        source: mcpServerNodeId,
+        target: toolNodeId,
+        animated: true,
+      };
+
+      setEdges((eds) => [...eds, newEdge]);
+    } catch (error) {
+      console.error('Failed to create tool canvas node:', error);
+    }
+  };
 
   /**
    * Handles node changes including position updates, selections, and removals.
@@ -241,6 +427,30 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
       >
         Auto Layout
       </button>
+
+      {/* MCP Server Menu Dialog */}
+      {selectedMCPServer && (
+        <MCPServerMenuDialog
+          open={menuDialogOpen}
+          onOpenChange={setMenuDialogOpen}
+          mcpServerId={selectedMCPServer.mcpServer.id}
+          mcpServerName={selectedMCPServer.mcpServer.name}
+          datasourceId={selectedMCPServer.datasource.id}
+          datasourceName={selectedMCPServer.datasource.name}
+          onToolCreated={handleToolCreated}
+        />
+      )}
+
+      {/* Tool Edit Dialog */}
+      {selectedTool && (
+        <ToolDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          mode="edit"
+          tool={selectedTool}
+          onDelete={handleToolDeleted}
+        />
+      )}
     </div>
   );
 }

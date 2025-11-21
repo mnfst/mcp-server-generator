@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { createConnection } from 'mysql2/promise';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 import { Datasource } from './entities/datasource.entity';
@@ -15,6 +15,8 @@ export class DatasourcesService {
   constructor(
     @InjectRepository(Datasource)
     private datasourceRepository: Repository<Datasource>,
+    @InjectDataSource()
+    private dataSource: DataSource,
     private canvasService: CanvasService,
   ) {
     // Derive encryption key from environment variable
@@ -170,8 +172,24 @@ export class DatasourcesService {
    * @param id - The unique identifier of the datasource to delete
    * @returns A promise that resolves when the datasource is successfully deleted
    * @throws {NotFoundException} If the datasource with the given ID is not found
+   * @throws {BadRequestException} If MCP servers exist for this datasource
    */
   async delete(id: string): Promise<void> {
+    // Check if any MCP servers exist for this datasource
+    const mcpServerCount = await this.dataSource
+      .createQueryBuilder()
+      .select('COUNT(*)', 'count')
+      .from('mcp_server', 'mcp_server')
+      .where('mcp_server.datasourceId = :id', { id })
+      .getRawOne()
+      .then((result) => parseInt(result.count, 10));
+
+    if (mcpServerCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete datasource: ${mcpServerCount} MCP server(s) are still using this datasource. Delete the MCP servers first.`,
+      );
+    }
+
     const result = await this.datasourceRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Datasource with ID ${id} not found`);
@@ -194,5 +212,21 @@ export class DatasourcesService {
     await this.datasourceRepository.save(datasource);
 
     return canConnect;
+  }
+
+  /**
+   * Gets the decrypted password for a datasource.
+   * Used by other services that need to connect to the database.
+   *
+   * @param id - The unique identifier of the datasource
+   * @returns The decrypted password string
+   * @throws {NotFoundException} When no datasource exists with the provided ID
+   */
+  async getDecryptedPassword(id: string): Promise<string> {
+    const datasource = await this.findOne(id);
+    if (!datasource) {
+      throw new NotFoundException(`Datasource with ID ${id} not found`);
+    }
+    return this.decrypt(datasource.encryptedPassword);
   }
 }

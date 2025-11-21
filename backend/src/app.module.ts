@@ -4,6 +4,9 @@ import { ConfigModule } from "@nestjs/config";
 import { DatasourcesModule } from "./datasources/datasources.module";
 import { MCPServersModule } from "./mcp-servers/mcp-servers.module";
 import { CanvasModule } from "./canvas/canvas.module";
+import { ToolsModule } from "./tools/tools.module";
+import { SchemaModule } from "./schema/schema.module";
+import { QueryGenerationModule } from "./query-generation/query-generation.module";
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { CanvasModule } from "./canvas/canvas.module";
     DatasourcesModule,
     MCPServersModule,
     CanvasModule,
+    ToolsModule,
+    SchemaModule,
+    QueryGenerationModule,
   ],
 })
 export class AppModule {}

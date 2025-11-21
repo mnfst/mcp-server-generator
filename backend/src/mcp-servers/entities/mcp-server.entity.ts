@@ -33,8 +33,8 @@ export class MCPServer {
 
   @Column({
     type: 'enum',
-    enum: MCPServerStatus,
-    default: MCPServerStatus.DRAFT,
+    enum: ['draft', 'active', 'error'],
+    default: 'draft',
   })
   status!: MCPServerStatus;
 

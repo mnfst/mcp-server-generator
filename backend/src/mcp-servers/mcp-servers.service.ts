@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { MCPServer } from './entities/mcp-server.entity';
-import { CreateMCPServerDto } from 'shared';
+import { CreateMCPServerDto, MCPServerStatus } from 'shared';
 import { DatasourcesService } from '../datasources/datasources.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
 import { CanvasService } from '../canvas/canvas.service';
@@ -20,6 +20,8 @@ export class MCPServersService {
   constructor(
     @InjectRepository(MCPServer)
     private mcpServerRepository: Repository<MCPServer>,
+    @InjectDataSource()
+    private dataSource: DataSource,
     private datasourcesService: DatasourcesService,
     private mcpRuntimeService: MCPRuntimeService,
     private canvasService: CanvasService,
@@ -66,7 +68,7 @@ export class MCPServersService {
       slug,
       datasourceId: createMCPServerDto.datasourceId,
       config: null,
-      status: 'draft',
+      status: MCPServerStatus.DRAFT,
       mcpEndpoint: `/mcp/${slug}`,
     });
 
@@ -140,7 +142,7 @@ export class MCPServersService {
   async update(id: string, updateData: Partial<MCPServer>): Promise<MCPServer> {
     const mcpServer = await this.findOne(id);
     Object.assign(mcpServer, updateData);
-    mcpServer.status = 'draft';
+    mcpServer.status = MCPServerStatus.DRAFT;
     return this.mcpServerRepository.save(mcpServer);
   }
 
@@ -151,12 +153,28 @@ export class MCPServersService {
    * @param id - The unique identifier of the MCP server to delete
    * @returns A promise that resolves when the MCP server is successfully deleted
    * @throws {NotFoundException} When no MCP server exists with the provided ID
+   * @throws {BadRequestException} If tools exist for this MCP server
    */
   async delete(id: string): Promise<void> {
     const mcpServer = await this.findOne(id);
 
+    // Check if any tools exist for this MCP server
+    const toolCount = await this.dataSource
+      .createQueryBuilder()
+      .select('COUNT(*)', 'count')
+      .from('tool', 'tool')
+      .where('tool.mcpServerId = :id', { id })
+      .getRawOne()
+      .then((result) => parseInt(result.count, 10));
+
+    if (toolCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete MCP server: ${toolCount} tool(s) are still using this MCP server. Delete the tools first.`,
+      );
+    }
+
     // Stop the server if it's running
-    if (mcpServer.status === 'active') {
+    if (mcpServer.status === MCPServerStatus.ACTIVE) {
       await this.mcpRuntimeService.stopServer(mcpServer.slug);
     }
 
@@ -179,16 +197,20 @@ export class MCPServersService {
     const mcpServer = await this.findOne(id);
 
     try {
-      // Start the MCP server
-      await this.mcpRuntimeService.startServer(mcpServer.slug, {
-        name: mcpServer.name,
-        version: '1.0.0',
-      });
+      // Start the MCP server with tools
+      await this.mcpRuntimeService.startServer(
+        mcpServer.slug,
+        mcpServer.id,
+        {
+          name: mcpServer.name,
+          version: '1.0.0',
+        },
+      );
 
-      mcpServer.status = 'active';
+      mcpServer.status = MCPServerStatus.ACTIVE;
       return this.mcpServerRepository.save(mcpServer);
     } catch (error) {
-      mcpServer.status = 'error';
+      mcpServer.status = MCPServerStatus.ERROR;
       await this.mcpServerRepository.save(mcpServer);
       throw new BadRequestException('Failed to activate MCP server');
     }
