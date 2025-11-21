@@ -5,9 +5,14 @@ import { MCPServersController, MCPProtocolController } from './mcp-servers.contr
 import { MCPRuntimeService } from './mcp-runtime.service';
 import { MCPServer } from './entities/mcp-server.entity';
 import { DatasourcesModule } from '../datasources/datasources.module';
+import { CanvasModule } from '../canvas/canvas.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MCPServer]), DatasourcesModule],
+  imports: [
+    TypeOrmModule.forFeature([MCPServer]),
+    DatasourcesModule,
+    CanvasModule,
+  ],
   controllers: [MCPServersController, MCPProtocolController],
   providers: [MCPServersService, MCPRuntimeService],
   exports: [MCPServersService, MCPRuntimeService],

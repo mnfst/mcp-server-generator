@@ -5,6 +5,7 @@ import { MCPServer } from './entities/mcp-server.entity';
 import { CreateMCPServerDto } from 'shared';
 import { DatasourcesService } from '../datasources/datasources.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
+import { CanvasService } from '../canvas/canvas.service';
 
 @Injectable()
 export class MCPServersService {
@@ -14,12 +15,14 @@ export class MCPServersService {
    * @param mcpServerRepository - The TypeORM repository for managing MCPServer entities
    * @param datasourcesService - The service for datasource operations and validation
    * @param mcpRuntimeService - The service for managing MCP server runtime lifecycle
+   * @param canvasService - The service for managing canvas nodes
    */
   constructor(
     @InjectRepository(MCPServer)
     private mcpServerRepository: Repository<MCPServer>,
     private datasourcesService: DatasourcesService,
     private mcpRuntimeService: MCPRuntimeService,
+    private canvasService: CanvasService,
   ) {}
 
   /**
@@ -67,7 +70,18 @@ export class MCPServersService {
       mcpEndpoint: `/mcp/${slug}`,
     });
 
-    return this.mcpServerRepository.save(mcpServer);
+    const savedServer = await this.mcpServerRepository.save(mcpServer);
+
+    // Automatically create a canvas node for this MCP server
+    await this.canvasService.create({
+      nodeId: `mcpServer-${savedServer.id}`,
+      type: 'mcpServer',
+      positionX: 300,
+      positionY: 100,
+      mcpServerId: savedServer.id,
+    });
+
+    return savedServer;
   }
 
   /**
