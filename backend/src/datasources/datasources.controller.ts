@@ -8,7 +8,7 @@ import {
   Delete,
 } from '@nestjs/common';
 import { DatasourcesService } from './datasources.service';
-import { CreateDatasourceDto } from 'shared';
+import { CreateDatasourceDto } from '../dtos';
 
 @Controller('api/datasources')
 export class DatasourcesController {

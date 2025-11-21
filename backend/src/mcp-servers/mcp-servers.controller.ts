@@ -13,7 +13,7 @@ import {
 import { Request, Response } from 'express';
 import { MCPServersService } from './mcp-servers.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
-import { CreateMCPServerDto } from 'shared';
+import { CreateMCPServerDto } from '../dtos';
 import { MCPServer } from './entities/mcp-server.entity';
 
 @Controller('api/mcp-servers')

@@ -9,7 +9,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { ToolsService } from './tools.service';
-import { CreateToolDto, Tool, ToolTestResult } from 'shared';
+import { Tool, ToolTestResult } from 'shared';
+import { CreateToolDto } from '../dtos';
 
 /**
  * Controller for tool management endpoints.

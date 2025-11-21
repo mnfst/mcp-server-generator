@@ -9,7 +9,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tool } from './entities/tool.entity';
-import { CreateToolDto, ToolTestResult } from 'shared';
+import { ToolTestResult } from 'shared';
+import { CreateToolDto } from '../dtos';
 import { MCPServersService } from '../mcp-servers/mcp-servers.service';
 import { DatasourcesService } from '../datasources/datasources.service';
 import { QueryGenerationService } from '../query-generation/query-generation.service';

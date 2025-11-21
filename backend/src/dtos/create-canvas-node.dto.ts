@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional, IsUUID } from 'class-validator';
-import { CanvasNodeType } from '../enums/canvas-node-type.enum';
+import { CanvasNodeType } from 'shared';
 
 /**
  * Data Transfer Object for creating a new canvas node.

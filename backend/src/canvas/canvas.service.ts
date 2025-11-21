@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CanvasNode } from './entities/canvas-node.entity';
-import { CreateCanvasNodeDto, UpdateCanvasNodeDto } from 'shared';
+import { CreateCanvasNodeDto, UpdateCanvasNodeDto } from '../dtos';
 
 @Injectable()
 export class CanvasService {

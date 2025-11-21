@@ -4,7 +4,8 @@ import { Repository, DataSource } from 'typeorm';
 import { createConnection } from 'mysql2/promise';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 import { Datasource } from './entities/datasource.entity';
-import { CreateDatasourceDto, CanvasNodeType } from 'shared';
+import { CanvasNodeType } from 'shared';
+import { CreateDatasourceDto } from '../dtos';
 import { CanvasService } from '../canvas/canvas.service';
 
 @Injectable()

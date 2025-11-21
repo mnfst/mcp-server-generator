@@ -6,7 +6,8 @@ import {
 import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import { MCPServer } from "./entities/mcp-server.entity";
-import { CreateMCPServerDto, MCPServerStatus, CanvasNodeType } from "shared";
+import { MCPServerStatus, CanvasNodeType } from "shared";
+import { CreateMCPServerDto } from "../dtos";
 import { DatasourcesService } from "../datasources/datasources.service";
 import { MCPRuntimeService } from "./mcp-runtime.service";
 import { CanvasService } from "../canvas/canvas.service";

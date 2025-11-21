@@ -8,7 +8,7 @@ import {
   Delete,
 } from '@nestjs/common';
 import { CanvasService } from './canvas.service';
-import { CreateCanvasNodeDto, UpdateCanvasNodeDto } from 'shared';
+import { CreateCanvasNodeDto, UpdateCanvasNodeDto } from '../dtos';
 
 @Controller('api/canvas/nodes')
 export class CanvasController {

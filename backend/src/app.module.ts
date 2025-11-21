@@ -13,7 +13,7 @@ import { QueryGenerationModule } from './query-generation/query-generation.modul
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: process.env.ENV_FILE || '../.env',
+      envFilePath: '.env',
       validationSchema: Joi.object({
         NODE_ENV: Joi.string()
           .valid('development', 'production', 'test')

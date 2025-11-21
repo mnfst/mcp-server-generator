@@ -1,24 +1,4 @@
 {
   "name": "shared",
-  "version": "1.0.0",
-  "description": "Shared types and DTOs for MCP Datasource Generator",
-  "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types/index.ts",
-    "./dtos": "./src/dtos/index.ts"
-  },
-  "scripts": {
-    "build": "echo 'No build needed - using TypeScript source files directly'",
-    "watch": "echo 'No watch needed - using TypeScript source files directly'"
-  },
-  "dependencies": {
-    "class-validator": "^0.14.0",
-    "reflect-metadata": "^0.1.13"
-  },
-  "devDependencies": {
-    "typescript": "^5.3.3"
-  }
+  "private": true
 }
