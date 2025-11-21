@@ -11,10 +11,6 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "dev:instance1": "dotenv -e .env -e .env.instance1 -- concurrently --names \"backend-1,frontend-1\" --prefix-colors \"cyan,magenta\" \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "dev:instance2": "dotenv -e .env -e .env.instance2 -- concurrently --names \"backend-2,frontend-2\" --prefix-colors \"blue,yellow\" \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "dev:instance3": "dotenv -e .env -e .env.instance3 -- concurrently --names \"backend-3,frontend-3\" --prefix-colors \"green,red\" \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "dev:all": "concurrently \"npm run dev:instance1\" \"npm run dev:instance2\" \"npm run dev:instance3\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces"
