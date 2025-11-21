@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Datasource } from '../../datasources/entities/datasource.entity';
+import { MCPServerStatus } from 'shared';
 
 @Entity('mcp_servers')
 export class MCPServer {
@@ -32,10 +33,10 @@ export class MCPServer {
 
   @Column({
     type: 'enum',
-    enum: ['draft', 'active', 'error'],
-    default: 'draft',
+    enum: MCPServerStatus,
+    default: MCPServerStatus.DRAFT,
   })
-  status!: 'draft' | 'active' | 'error';
+  status!: MCPServerStatus;
 
   @Column({ nullable: true })
   mcpEndpoint!: string;

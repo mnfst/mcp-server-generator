@@ -70,6 +70,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
           id: node.nodeId,
           type: node.type,
           position: { x: node.positionX, y: node.positionY },
+          draggable: true,
           data: {
             datasource: node.datasource,
             mcpServer: node.mcpServer,
@@ -115,26 +116,33 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
    */
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
+      // Apply changes first and get updated nodes
+      setNodes((nds) => {
+        const updatedNodes = applyNodeChanges(changes, nds);
 
-      // Update positions in backend for position changes
-      changes.forEach((change) => {
-        if (change.type === 'position' && change.position && !change.dragging) {
-          // Position change completed (not dragging)
-          const nodeId = change.id;
-          const position = change.position;
+        // Update positions in backend for position changes
+        changes.forEach((change) => {
+          if (change.type === 'position' && !change.dragging) {
+            // Position change completed (not dragging)
+            const nodeId = change.id;
+            const node = updatedNodes.find(n => n.id === nodeId);
 
-          fetch(apiUrl(`/api/canvas/nodes/${nodeId}`), {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              positionX: position.x,
-              positionY: position.y,
-            }),
-          }).catch((error) => {
-            console.error('Failed to update node position:', error);
-          });
-        }
+            if (node && node.position) {
+              fetch(apiUrl(`/api/canvas/nodes/${nodeId}`), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  positionX: node.position.x,
+                  positionY: node.position.y,
+                }),
+              }).catch((error) => {
+                console.error('Failed to update node position:', error);
+              });
+            }
+          }
+        });
+
+        return updatedNodes;
       });
     },
     [setNodes]
@@ -165,7 +173,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
     dagreGraph.setGraph({ rankdir: 'LR', ranksep: 150, nodesep: 80 });
 
     nodes.forEach((node) => {
-      dagreGraph.setNode(node.id, { width: 200, height: 100 });
+      dagreGraph.setNode(node.id, { width: 200, height: 180 });
     });
 
     edges.forEach((edge) => {
@@ -180,7 +188,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
         ...node,
         position: {
           x: nodeWithPosition.x - 100,
-          y: nodeWithPosition.y - 50,
+          y: nodeWithPosition.y - 90,
         },
       };
     });
@@ -229,7 +237,7 @@ export function FlowCanvas({ onCreateDatasource, onCreateMCPServer }: FlowCanvas
       {/* Layout button */}
       <button
         onClick={onLayout}
-        className="absolute top-4 right-4 z-10 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+        className="absolute top-20 right-4 z-10 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
       >
         Auto Layout
       </button>
