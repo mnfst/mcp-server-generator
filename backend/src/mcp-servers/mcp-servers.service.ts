@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { MCPServer } from './entities/mcp-server.entity';
-import { CreateMCPServerDto, MCPServerStatus } from 'shared';
-import { DatasourcesService } from '../datasources/datasources.service';
-import { MCPRuntimeService } from './mcp-runtime.service';
-import { CanvasService } from '../canvas/canvas.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import { MCPServer } from "./entities/mcp-server.entity";
+import { CreateMCPServerDto, MCPServerStatus } from "shared";
+import { DatasourcesService } from "../datasources/datasources.service";
+import { MCPRuntimeService } from "./mcp-runtime.service";
+import { CanvasService } from "../canvas/canvas.service";
 
 @Injectable()
 export class MCPServersService {
@@ -24,7 +28,7 @@ export class MCPServersService {
     private dataSource: DataSource,
     private datasourcesService: DatasourcesService,
     private mcpRuntimeService: MCPRuntimeService,
-    private canvasService: CanvasService,
+    private canvasService: CanvasService
   ) {}
 
   /**
@@ -37,8 +41,8 @@ export class MCPServersService {
   private generateSlug(baseName: string): string {
     return baseName
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
   /**
@@ -52,7 +56,7 @@ export class MCPServersService {
   async create(createMCPServerDto: CreateMCPServerDto): Promise<MCPServer> {
     // Validate datasource exists
     const datasource = await this.datasourcesService.findOne(
-      createMCPServerDto.datasourceId,
+      createMCPServerDto.datasourceId
     );
 
     // Generate slug from datasource name with conflict resolution
@@ -77,7 +81,7 @@ export class MCPServersService {
     // Automatically create a canvas node for this MCP server
     await this.canvasService.create({
       nodeId: `mcpServer-${savedServer.id}`,
-      type: 'mcpServer',
+      type: CanvasNodeType.MCP_SERVER,
       positionX: 300,
       positionY: 100,
       mcpServerId: savedServer.id,
@@ -123,7 +127,9 @@ export class MCPServersService {
    * @throws {NotFoundException} When no MCP server exists with the provided slug
    */
   async findBySlug(slug: string): Promise<MCPServer> {
-    const mcpServer = await this.mcpServerRepository.findOne({ where: { slug } });
+    const mcpServer = await this.mcpServerRepository.findOne({
+      where: { slug },
+    });
     if (!mcpServer) {
       throw new NotFoundException(`MCP Server with slug ${slug} not found`);
     }
@@ -161,15 +167,15 @@ export class MCPServersService {
     // Check if any tools exist for this MCP server
     const toolCount = await this.dataSource
       .createQueryBuilder()
-      .select('COUNT(*)', 'count')
-      .from('tool', 'tool')
-      .where('tool.mcpServerId = :id', { id })
+      .select("COUNT(*)", "count")
+      .from("tool", "tool")
+      .where("tool.mcpServerId = :id", { id })
       .getRawOne()
       .then((result) => parseInt(result.count, 10));
 
     if (toolCount > 0) {
       throw new BadRequestException(
-        `Cannot delete MCP server: ${toolCount} tool(s) are still using this MCP server. Delete the tools first.`,
+        `Cannot delete MCP server: ${toolCount} tool(s) are still using this MCP server. Delete the tools first.`
       );
     }
 
@@ -198,21 +204,17 @@ export class MCPServersService {
 
     try {
       // Start the MCP server with tools
-      await this.mcpRuntimeService.startServer(
-        mcpServer.slug,
-        mcpServer.id,
-        {
-          name: mcpServer.name,
-          version: '1.0.0',
-        },
-      );
+      await this.mcpRuntimeService.startServer(mcpServer.slug, mcpServer.id, {
+        name: mcpServer.name,
+        version: "1.0.0",
+      });
 
       mcpServer.status = MCPServerStatus.ACTIVE;
       return this.mcpServerRepository.save(mcpServer);
     } catch (error) {
       mcpServer.status = MCPServerStatus.ERROR;
       await this.mcpServerRepository.save(mcpServer);
-      throw new BadRequestException('Failed to activate MCP server');
+      throw new BadRequestException("Failed to activate MCP server");
     }
   }
 }

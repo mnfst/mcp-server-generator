@@ -9,6 +9,10 @@ import {
 } from 'typeorm';
 import { Datasource } from '../../datasources/entities/datasource.entity';
 import { MCPServer } from '../../mcp-servers/entities/mcp-server.entity';
+import * as shared from 'shared';
+
+const CanvasNodeType = shared.CanvasNodeType;
+type CanvasNodeType = shared.CanvasNodeType;
 
 @Entity('canvas_nodes')
 export class CanvasNode {
@@ -20,9 +24,9 @@ export class CanvasNode {
 
   @Column({
     type: 'enum',
-    enum: ['datasource', 'mcpServer', 'tool', 'add'],
+    enum: CanvasNodeType,
   })
-  type!: 'datasource' | 'mcpServer' | 'tool' | 'add';
+  type!: CanvasNodeType;
 
   @Column({ type: 'float' })
   positionX!: number;
