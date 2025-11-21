@@ -1,0 +1,69 @@
+services:
+  mysql-instance1:
+    image: mysql:9.3.0
+    container_name: mcp-generator-mysql-instance1
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: poc_origin_instance1
+      MYSQL_USER: mcp_app
+      MYSQL_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data-instance1:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+    networks:
+      - mcp-network
+
+  mysql-instance2:
+    image: mysql:9.3.0
+    container_name: mcp-generator-mysql-instance2
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: poc_origin_instance2
+      MYSQL_USER: mcp_app
+      MYSQL_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data-instance2:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+    networks:
+      - mcp-network
+
+  mysql-instance3:
+    image: mysql:9.3.0
+    container_name: mcp-generator-mysql-instance3
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: poc_origin_instance3
+      MYSQL_USER: mcp_app
+      MYSQL_PASSWORD: root
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-data-instance3:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  mysql-data-instance1:
+  mysql-data-instance2:
+  mysql-data-instance3:

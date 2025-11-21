@@ -5,6 +5,7 @@ A visual canvas-based application that enables users to create Model Context Pro
 ## Overview
 
 This application provides a React Flow canvas interface where users can:
+
 - Connect to MySQL databases
 - Generate persistent MCP servers at dynamic endpoints
 - Create custom tools using natural language prompts (AI converts to SQL)
@@ -26,12 +27,14 @@ poc-origin/
 ### Technology Stack
 
 **Backend:**
+
 - NestJS 10.x
 - TypeORM with MySQL
 - MCP SDK (@modelcontextprotocol/sdk)
 - OpenAI API for SQL generation
 
 **Frontend:**
+
 - React 18.x
 - Vite 5.x
 - React Flow (canvas interface)
@@ -39,6 +42,7 @@ poc-origin/
 - Radix UI + Tailwind CSS
 
 **Database:**
+
 - MySQL 9.3 (application data)
 - MySQL 5.7+ (user datasources)
 
@@ -68,23 +72,34 @@ This will install dependencies for all workspaces (backend, frontend, shared).
 
 ### 3. Configure Environment Variables
 
-The application uses environment files for configuration. Three pre-configured instance files are provided:
+The application uses a **cascading environment variable system** for secure configuration management:
+
+- **Main `.env` file**: Contains sensitive data (API keys, encryption keys) - gitignored
+- **Instance files** (`.env.instance1`, `.env.instance2`, `.env.instance3`): Instance-specific settings (ports, database names) - can be version controlled
+
+Three pre-configured instance files are provided:
 
 - `.env.instance1` - Ports: Backend 3001, Frontend 5173, MySQL 3306
 - `.env.instance2` - Ports: Backend 3002, Frontend 5174, MySQL 3307
 - `.env.instance3` - Ports: Backend 3003, Frontend 5175, MySQL 3308
 
-**Important:** Edit your chosen instance file and add your OpenAI API key:
+**Important:** Add your secrets to the main `.env` file (NOT in instance files):
 
 ```bash
-# Edit the instance file
-nano .env.instance1  # or instance2, instance3
+# Edit the main .env file
+nano .env
 
-# Update the OPENAI_API_KEY line:
+# Ensure these are set:
 OPENAI_API_KEY=sk-your-actual-openai-api-key-here
+CREDENTIALS_ENCRYPTION_KEY=your-32-character-encryption-key-here
 ```
 
-You can also customize the encryption key if needed (must be 32 characters).
+**How it works:**
+- Sensitive data (API keys, encryption keys) stays in the main `.env` file
+- Instance files only contain instance-specific configuration (ports, database names)
+- When starting an instance, variables are loaded from `.env` first, then from `.env.instanceX`
+- Instance-specific variables override main `.env` variables if both are present
+- This keeps secrets out of version control while allowing instance configs to be committed
 
 ### 4. Start an Instance
 
@@ -96,11 +111,13 @@ Use the provided scripts to manage application instances:
 ```
 
 This script will:
+
 1. Start a MySQL 9.3 container with isolated data volume
 2. Wait for MySQL to be ready
 3. Start both backend and frontend with the configured ports
 
 Access the application at:
+
 - Backend: http://localhost:3001
 - Frontend: http://localhost:5173
 
@@ -125,25 +142,28 @@ You can run multiple instances of the application concurrently, each with its ow
 
 Each instance runs completely isolated:
 
-| Instance | Backend | Frontend | MySQL | Database |
-|----------|---------|----------|-------|----------|
-| 1 | :3001 | :5173 | :3306 | poc_origin_instance1 |
-| 2 | :3002 | :5174 | :3307 | poc_origin_instance2 |
-| 3 | :3003 | :5175 | :3308 | poc_origin_instance3 |
+| Instance | Backend | Frontend | MySQL | Database             |
+| -------- | ------- | -------- | ----- | -------------------- |
+| 1        | :3001   | :5173    | :3306 | poc_origin_instance1 |
+| 2        | :3002   | :5174    | :3307 | poc_origin_instance2 |
+| 3        | :3003   | :5175    | :3308 | poc_origin_instance3 |
 
 ### Managing Instances
 
 **List all running instances:**
+
 ```bash
 ./scripts/list-instances.sh
 ```
 
 **Stop a specific instance:**
+
 ```bash
 ./scripts/stop-instance.sh 1
 ```
 
 **Create a new instance configuration:**
+
 ```bash
 # Auto-calculate ports
 ./scripts/create-instance.sh 4
@@ -153,16 +173,16 @@ Each instance runs completely isolated:
 ```
 
 After creating a new instance:
+
 1. Edit `.env.instance4` to add your OpenAI API key
 2. Start it with `./scripts/start-instance.sh 4`
 
 ### Why Multiple Instances?
 
 Running multiple instances is useful for:
-- **Testing**: Run different configurations simultaneously
+
 - **Development**: Work on multiple features in parallel
-- **Demos**: Show different setups to different users
-- **Load Testing**: Test multiple concurrent users
+- **Testing**: Run different configurations simultaneously
 - **Comparison**: Compare different datasource configurations side-by-side
 
 ## Usage
@@ -245,6 +265,7 @@ shared/
 ## API Endpoints
 
 ### Datasources
+
 - `POST /api/datasources` - Create a new datasource
 - `GET /api/datasources` - List all datasources
 - `GET /api/datasources/:id` - Get datasource details
@@ -254,6 +275,7 @@ shared/
 - `POST /api/datasources/:id/test` - Test existing datasource
 
 ### MCP Servers
+
 - `POST /api/mcp-servers` - Create MCP server
 - `GET /api/mcp-servers` - List all MCP servers
 - `GET /api/mcp-servers/:id` - Get MCP server details
@@ -262,12 +284,14 @@ shared/
 - `POST /api/mcp-servers/:id/activate` - Activate MCP server
 
 ### Canvas
+
 - `POST /api/canvas/nodes` - Create canvas node
 - `GET /api/canvas/nodes` - List all canvas nodes
 - `PATCH /api/canvas/nodes/:nodeId` - Update node position
 - `DELETE /api/canvas/nodes/:nodeId` - Delete canvas node
 
 ### MCP Protocol
+
 - `POST /mcp/:slug` - MCP protocol endpoint (JSON-RPC 2.0)
 
 ## Development
@@ -308,17 +332,17 @@ npm run lint --workspace=frontend
 
 ## Environment Variables Reference
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DB_HOST` | MySQL host | Yes | `localhost` |
-| `DB_PORT` | MySQL port | Yes | `3306` |
-| `DB_USERNAME` | MySQL username | Yes | `mcp_app` |
-| `DB_PASSWORD` | MySQL password | Yes | - |
-| `DB_DATABASE` | Database name | Yes | `poc_origin` |
-| `CREDENTIALS_ENCRYPTION_KEY` | 32-char encryption key | Yes | - |
-| `OPENAI_API_KEY` | OpenAI API key | Yes | - |
-| `BACKEND_PORT` | Backend server port | No | `3001` |
-| `FRONTEND_PORT` | Frontend dev server port | No | `5173` |
+| Variable                     | Description              | Required | Default      |
+| ---------------------------- | ------------------------ | -------- | ------------ |
+| `DB_HOST`                    | MySQL host               | Yes      | `localhost`  |
+| `DB_PORT`                    | MySQL port               | Yes      | `3306`       |
+| `DB_USERNAME`                | MySQL username           | Yes      | `mcp_app`    |
+| `DB_PASSWORD`                | MySQL password           | Yes      | -            |
+| `DB_DATABASE`                | Database name            | Yes      | `poc_origin` |
+| `CREDENTIALS_ENCRYPTION_KEY` | 32-char encryption key   | Yes      | -            |
+| `OPENAI_API_KEY`             | OpenAI API key           | Yes      | -            |
+| `BACKEND_PORT`               | Backend server port      | No       | `3001`       |
+| `FRONTEND_PORT`              | Frontend dev server port | No       | `5173`       |
 
 ## Security Notes
 
@@ -379,10 +403,13 @@ This is a POC project. For production use, consider:
 ## Documentation
 
 ### Instance Management
+
 - [Instance Management Guide](./INSTANCES.md) - Comprehensive guide for managing multiple concurrent instances
 
 ### Feature Specifications
+
 For detailed specifications and implementation details, see the `/specs` directory:
+
 - [Feature Specification](./specs/001-mcp-datasource-generator/spec.md)
 - [Implementation Plan](./specs/001-mcp-datasource-generator/plan.md)
 - [API Contracts](./specs/001-mcp-datasource-generator/contracts/)

@@ -1,13 +1,14 @@
-import axios from 'axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CreateToolDto, Tool, ToolTestResult, DatabaseSchema } from 'shared';
+import axios from "axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CreateToolDto, Tool, ToolTestResult, DatabaseSchema } from "shared";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true,
 });
@@ -18,13 +19,13 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response) {
       // Server responded with error status
-      console.error('API Error:', error.response.data);
+      console.error("API Error:", error.response.data);
     } else if (error.request) {
       // Request made but no response
-      console.error('Network Error:', error.message);
+      console.error("Network Error:", error.message);
     } else {
       // Something else happened
-      console.error('Error:', error.message);
+      console.error("Error:", error.message);
     }
     return Promise.reject(error);
   }
@@ -41,12 +42,12 @@ export function useCreateTool() {
 
   return useMutation({
     mutationFn: async (data: CreateToolDto) => {
-      const response = await apiClient.post<Tool>('/api/tools', data);
+      const response = await apiClient.post<Tool>("/api/tools", data);
       return response.data;
     },
     onSuccess: () => {
       // Invalidate tools query to refetch the list
-      queryClient.invalidateQueries({ queryKey: ['tools'] });
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
     },
   });
 }
@@ -65,7 +66,7 @@ export function useUpdateTool() {
     },
     onSuccess: () => {
       // Invalidate tools query to refetch the list
-      queryClient.invalidateQueries({ queryKey: ['tools'] });
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
     },
   });
 }
@@ -83,7 +84,7 @@ export function useDeleteTool() {
     },
     onSuccess: () => {
       // Invalidate tools query to refetch the list
-      queryClient.invalidateQueries({ queryKey: ['tools'] });
+      queryClient.invalidateQueries({ queryKey: ["tools"] });
     },
   });
 }
@@ -106,8 +107,17 @@ export function useDeleteCanvasNode() {
  */
 export function useTestTool() {
   return useMutation({
-    mutationFn: async ({ id, parameters }: { id: string; parameters?: Record<string, any> }) => {
-      const response = await apiClient.post<ToolTestResult>(`/api/tools/${id}/test`, { parameters });
+    mutationFn: async ({
+      id,
+      parameters,
+    }: {
+      id: string;
+      parameters?: Record<string, any>;
+    }) => {
+      const response = await apiClient.post<ToolTestResult>(
+        `/api/tools/${id}/test`,
+        { parameters }
+      );
       return response.data;
     },
   });
@@ -122,12 +132,14 @@ export function useRefreshSchema() {
 
   return useMutation({
     mutationFn: async (datasourceId: string) => {
-      const response = await apiClient.post<DatabaseSchema>(`/api/schema/${datasourceId}/refresh`);
+      const response = await apiClient.post<DatabaseSchema>(
+        `/api/schema/${datasourceId}/refresh`
+      );
       return response.data;
     },
     onSuccess: (_data, datasourceId) => {
       // Invalidate schema query for this datasource
-      queryClient.invalidateQueries({ queryKey: ['schema', datasourceId] });
+      queryClient.invalidateQueries({ queryKey: ["schema", datasourceId] });
     },
   });
 }
@@ -140,10 +152,12 @@ export function useRefreshSchema() {
  */
 export function useSchema(datasourceId: string | undefined) {
   return useQuery({
-    queryKey: ['schema', datasourceId],
+    queryKey: ["schema", datasourceId],
     queryFn: async () => {
-      if (!datasourceId) throw new Error('Datasource ID is required');
-      const response = await apiClient.get<DatabaseSchema>(`/api/schema/${datasourceId}`);
+      if (!datasourceId) throw new Error("Datasource ID is required");
+      const response = await apiClient.get<DatabaseSchema>(
+        `/api/schema/${datasourceId}`
+      );
       return response.data;
     },
     enabled: !!datasourceId,
@@ -156,10 +170,10 @@ export function useSchema(datasourceId: string | undefined) {
  */
 export function useTools(mcpServerId?: string) {
   return useQuery({
-    queryKey: ['tools', mcpServerId],
+    queryKey: ["tools", mcpServerId],
     queryFn: async () => {
       const params = mcpServerId ? { mcpServerId } : {};
-      const response = await apiClient.get<Tool[]>('/api/tools', { params });
+      const response = await apiClient.get<Tool[]>("/api/tools", { params });
       return response.data;
     },
   });

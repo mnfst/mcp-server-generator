@@ -7,7 +7,11 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "shared": path.resolve(__dirname, "../shared/src"),
     },
+  },
+  optimizeDeps: {
+    include: ['shared'],
   },
   server: {
     port: parseInt(process.env.FRONTEND_PORT || '5173'),
