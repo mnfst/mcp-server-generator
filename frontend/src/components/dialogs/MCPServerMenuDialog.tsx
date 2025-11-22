@@ -119,6 +119,7 @@ export function MCPServerMenuDialog({
       <ToolDialog
         open={toolDialogOpen}
         onOpenChange={setToolDialogOpen}
+        mode="create"
         mcpServerId={mcpServerId}
         onSuccess={handleToolCreated}
       />

@@ -1,20 +1,20 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
-import { DatabaseSchema, ToolParameter } from 'shared';
+import { Injectable, BadRequestException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import OpenAI from 'openai'
+import { DatabaseSchema, ToolParameter } from 'shared'
 
 /**
  * Result of SQL query generation from natural language.
  */
 export interface QueryGenerationResult {
   /** Generated MySQL SELECT query */
-  sqlQuery: string;
+  sqlQuery: string
 
   /** Extracted parameters from the prompt */
-  parameters: Record<string, ToolParameter>;
+  parameters: Record<string, ToolParameter>
 
   /** Explanation of what the query does */
-  explanation: string;
+  explanation: string
 }
 
 /**
@@ -29,16 +29,16 @@ export interface QueryGenerationResult {
  */
 @Injectable()
 export class QueryGenerationService {
-  private openai: OpenAI;
+  private openai: OpenAI
 
   constructor(private configService: ConfigService) {
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+    const apiKey = this.configService.get<string>('OPENAI_API_KEY')
     if (!apiKey || apiKey === 'sk-your-openai-api-key-here') {
       throw new Error(
-        'OPENAI_API_KEY is not configured. Please set it in your .env file.',
-      );
+        'OPENAI_API_KEY is not configured. Please set it in your .env file.'
+      )
     }
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({ apiKey })
   }
 
   /**
@@ -58,11 +58,11 @@ export class QueryGenerationService {
    */
   async generateQuery(
     prompt: string,
-    schema: DatabaseSchema,
+    schema: DatabaseSchema
   ): Promise<QueryGenerationResult> {
     try {
       // Format schema for LLM context
-      const schemaContext = this.formatSchemaForPrompt(schema);
+      const schemaContext = this.formatSchemaForPrompt(schema)
 
       // Construct the system prompt
       const systemPrompt = `You are a MySQL query generator. Given a database schema and a natural language request, generate a MySQL SELECT query.
@@ -91,59 +91,59 @@ Respond with JSON in this exact format:
     }
   },
   "explanation": "Brief explanation of what the query does"
-}`;
+}`
 
       // Call OpenAI API
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4-turbo-preview',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: prompt },
+          { role: 'user', content: prompt }
         ],
         response_format: { type: 'json_object' },
         temperature: 0.3, // Lower temperature for more consistent output
-        max_tokens: 1500,
-      });
+        max_tokens: 1500
+      })
 
-      const content = response.choices[0]?.message?.content;
+      const content = response.choices[0]?.message?.content
       if (!content) {
-        throw new Error('No response from OpenAI');
+        throw new Error('No response from OpenAI')
       }
 
       // Parse the JSON response
-      const result = JSON.parse(content) as QueryGenerationResult;
+      const result = JSON.parse(content) as QueryGenerationResult
 
       // Validate that it's a SELECT query
       if (!this.isSelectQuery(result.sqlQuery)) {
         throw new Error(
-          'Generated query is not a SELECT statement. Only SELECT queries are allowed.',
-        );
+          'Generated query is not a SELECT statement. Only SELECT queries are allowed.'
+        )
       }
 
-      return result;
+      return result
     } catch (error) {
       if (error instanceof Error) {
         // Handle specific OpenAI errors
         if (error.message.includes('API key')) {
           throw new BadRequestException(
-            'OpenAI API key is invalid. Please check your configuration.',
-          );
+            'OpenAI API key is invalid. Please check your configuration.'
+          )
         }
         if (error.message.includes('rate limit')) {
           throw new BadRequestException(
-            'OpenAI API rate limit exceeded. Please try again in a moment.',
-          );
+            'OpenAI API rate limit exceeded. Please try again in a moment.'
+          )
         }
         if (error.message.includes('timeout')) {
           throw new BadRequestException(
-            'OpenAI API request timed out. Please try again.',
-          );
+            'OpenAI API request timed out. Please try again.'
+          )
         }
         throw new BadRequestException(
-          `Query generation failed: ${error.message}`,
-        );
+          `Query generation failed: ${error.message}`
+        )
       }
-      throw new BadRequestException('Query generation failed');
+      throw new BadRequestException('Query generation failed')
     }
   }
 
@@ -155,34 +155,34 @@ Respond with JSON in this exact format:
    * @returns Formatted schema string
    */
   private formatSchemaForPrompt(schema: DatabaseSchema): string {
-    const lines: string[] = [];
+    const lines: string[] = []
 
     for (const table of schema.tables) {
-      lines.push(`\nTable: ${table.name}`);
+      lines.push(`\nTable: ${table.name}`)
 
       // Add columns
-      lines.push('Columns:');
+      lines.push('Columns:')
       for (const column of table.columns) {
-        const nullable = column.nullable ? 'NULL' : 'NOT NULL';
-        const pk = column.isPrimaryKey ? ' [PRIMARY KEY]' : '';
-        const fk = column.isForeignKey ? ' [FOREIGN KEY]' : '';
+        const nullable = column.nullable ? 'NULL' : 'NOT NULL'
+        const pk = column.isPrimaryKey ? ' [PRIMARY KEY]' : ''
+        const fk = column.isForeignKey ? ' [FOREIGN KEY]' : ''
         lines.push(
-          `  - ${column.name}: ${column.dataType} ${nullable}${pk}${fk}`,
-        );
+          `  - ${column.name}: ${column.dataType} ${nullable}${pk}${fk}`
+        )
       }
 
       // Add foreign keys
       if (table.foreignKeys.length > 0) {
-        lines.push('Foreign Keys:');
+        lines.push('Foreign Keys:')
         for (const fk of table.foreignKeys) {
           lines.push(
-            `  - ${fk.columnName} -> ${fk.referencedTable}.${fk.referencedColumn}`,
-          );
+            `  - ${fk.columnName} -> ${fk.referencedTable}.${fk.referencedColumn}`
+          )
         }
       }
     }
 
-    return lines.join('\n');
+    return lines.join('\n')
   }
 
   /**
@@ -193,11 +193,11 @@ Respond with JSON in this exact format:
    * @returns true if the query is a valid SELECT statement
    */
   private isSelectQuery(query: string): boolean {
-    const trimmed = query.trim().toUpperCase();
+    const trimmed = query.trim().toUpperCase()
 
     // Must start with SELECT
     if (!trimmed.startsWith('SELECT')) {
-      return false;
+      return false
     }
 
     // Check for dangerous keywords
@@ -211,15 +211,15 @@ Respond with JSON in this exact format:
       'TRUNCATE',
       'REPLACE',
       'GRANT',
-      'REVOKE',
-    ];
+      'REVOKE'
+    ]
 
     for (const keyword of dangerousKeywords) {
       if (trimmed.includes(keyword)) {
-        return false;
+        return false
       }
     }
 
-    return true;
+    return true
   }
 }

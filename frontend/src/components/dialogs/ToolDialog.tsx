@@ -301,27 +301,7 @@ export function ToolDialog({
             )}
           </div>
 
-          {/* Generate/Edit SQL Button */}
-          {!currentTool && isCreateMode && (
-            <Button
-              onClick={onGenerateSQL}
-              disabled={createTool.isPending || !prompt}
-              className="w-full"
-            >
-              {createTool.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating SQL...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Generate SQL with AI
-                </>
-              )}
-            </Button>
-          )}
-
+          {/* Edit SQL Button */}
           {isEditMode && currentTool && (
             <Button
               onClick={onEditPrompt}
@@ -434,7 +414,33 @@ export function ToolDialog({
 
         {/* Footer Actions */}
         <div className="flex gap-2 border-t pt-4">
-          {/* Create Mode Actions */}
+          {/* Create Mode Actions - Before Generation */}
+          {isCreateMode && !currentTool && (
+            <>
+              <Button onClick={handleClose} variant="outline" className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={onGenerateSQL}
+                disabled={createTool.isPending || !prompt}
+                className="flex-1"
+              >
+                {createTool.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating SQL...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate SQL with AI
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+
+          {/* Create Mode Actions - After Generation */}
           {isCreateMode && currentTool && (
             <>
               <Button onClick={onCreateAnother} variant="outline" className="flex-1">
