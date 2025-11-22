@@ -1,7 +1,14 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Database, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Database, CheckCircle2, XCircle, AlertCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Datasource } from 'shared';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 /**
  * Data structure for DatasourceNode component.
@@ -11,6 +18,12 @@ interface DatasourceNodeData {
   datasource: Datasource;
   /** Optional callback function triggered when the node is clicked */
   onClick?: () => void;
+  /** Optional callback function triggered when edit is clicked */
+  onEdit?: () => void;
+  /** Optional callback function triggered when delete is clicked */
+  onDelete?: () => void;
+  /** Whether this node has children (disables delete) */
+  hasChildren?: boolean;
 }
 
 /**
@@ -32,7 +45,7 @@ interface DatasourceNodeData {
  * @returns A styled datasource node with connection handles
  */
 export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => {
-  const { datasource } = data;
+  const { datasource, onEdit, onDelete, hasChildren } = data;
 
   /**
    * Returns the appropriate status icon based on datasource connection status.
@@ -80,9 +93,34 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
 
       <div
         onClick={data.onClick}
-        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer ${getStatusColor()}`}
+        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer relative ${getStatusColor()}`}
         style={{ minWidth: '200px', minHeight: '180px' }}
       >
+        {/* 3-dots Menu */}
+        <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onDelete}
+                disabled={hasChildren}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <div className="flex flex-col items-center gap-3 h-full">
           {/* Icon */}
           <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">

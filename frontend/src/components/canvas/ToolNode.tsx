@@ -1,7 +1,14 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Wrench } from 'lucide-react';
+import { Wrench, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Tool } from 'shared';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 /**
  * Data structure for ToolNode component.
@@ -11,6 +18,12 @@ interface ToolNodeData {
   tool: Tool;
   /** Optional callback function triggered when the node is clicked */
   onClick?: () => void;
+  /** Optional callback function triggered when edit is clicked */
+  onEdit?: () => void;
+  /** Optional callback function triggered when delete is clicked */
+  onDelete?: () => void;
+  /** Whether this node has children (disables delete) */
+  hasChildren?: boolean;
 }
 
 /**
@@ -27,7 +40,7 @@ interface ToolNodeData {
  * @returns A styled tool node with connection handles
  */
 export const ToolNode = memo(({ data }: NodeProps<ToolNodeData>) => {
-  const { tool, onClick } = data;
+  const { tool, onClick, onEdit, onDelete, hasChildren } = data;
 
   const handleClick = () => {
     if (onClick) {
@@ -37,7 +50,7 @@ export const ToolNode = memo(({ data }: NodeProps<ToolNodeData>) => {
 
   return (
     <div
-      className="rounded-lg border-2 border-purple-400 bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer min-w-[200px]"
+      className="rounded-lg border-2 border-purple-400 bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer min-w-[200px] relative"
       onClick={handleClick}
     >
       {/* Input Handle (connects to MCP Server) */}
@@ -46,6 +59,31 @@ export const ToolNode = memo(({ data }: NodeProps<ToolNodeData>) => {
         position={Position.Left}
         className="!bg-purple-500 !w-3 !h-3"
       />
+
+      {/* 3-dots Menu */}
+      <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={onDelete}
+              disabled={hasChildren}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Node Content */}
       <div className="p-4">

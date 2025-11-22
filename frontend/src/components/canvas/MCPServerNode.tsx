@@ -1,7 +1,15 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Server, CheckCircle2, FileEdit, AlertCircle } from 'lucide-react';
+import { Server, CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable } from 'lucide-react';
 import { MCPServer, MCPServerStatus } from 'shared';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MCPConnectionDialog } from '../dialogs/MCPConnectionDialog';
 
 /**
  * Data structure for MCPServerNode component.
@@ -11,6 +19,12 @@ interface MCPServerNodeData {
   mcpServer: MCPServer;
   /** Optional callback function triggered when the node is clicked */
   onClick?: () => void;
+  /** Optional callback function triggered when edit is clicked */
+  onEdit?: () => void;
+  /** Optional callback function triggered when delete is clicked */
+  onDelete?: () => void;
+  /** Whether this node has children (disables delete) */
+  hasChildren?: boolean;
 }
 
 /**
@@ -32,7 +46,8 @@ interface MCPServerNodeData {
  * @returns A styled MCP server node with connection handles
  */
 export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
-  const { mcpServer } = data;
+  const { mcpServer, onEdit, onDelete, hasChildren } = data;
+  const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
 
   /**
    * Returns the appropriate status icon based on MCP server activation status.
@@ -93,9 +108,46 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
 
       <div
         onClick={data.onClick}
-        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer ${getStatusColor()}`}
+        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer relative ${getStatusColor()}`}
         style={{ minWidth: '200px', minHeight: '180px' }}
       >
+        {/* Action Buttons */}
+        <div className="absolute top-2 right-2 flex gap-1" onClick={(e) => e.stopPropagation()}>
+          {/* Connect Button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 w-7 p-0"
+            onClick={() => setConnectionDialogOpen(true)}
+            title="Connection Instructions"
+          >
+            <Cable className="h-4 w-4" />
+          </Button>
+
+          {/* 3-dots Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={onDelete}
+                disabled={hasChildren}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <div className="flex flex-col items-center gap-3 h-full">
           {/* Icon */}
           <div className="w-12 h-12 rounded-md bg-blue-500/10 flex items-center justify-center flex-shrink-0">
@@ -124,6 +176,13 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
           </div>
         </div>
       </div>
+
+      {/* Connection Instructions Dialog */}
+      <MCPConnectionDialog
+        open={connectionDialogOpen}
+        onOpenChange={setConnectionDialogOpen}
+        mcpServer={mcpServer}
+      />
 
       {/* Output handle for connections to tool nodes (future) */}
       <Handle

@@ -18,6 +18,7 @@ import dagre from "dagre";
 import { AddNode } from "./AddNode";
 import { DatasourceNode } from "./DatasourceNode";
 import { MCPServerNode } from "./MCPServerNode";
+import { ToolNode } from "./ToolNode";
 import { MCPServerMenuDialog } from "../dialogs/MCPServerMenuDialog";
 import { ToolDialog } from "../dialogs/ToolDialog";
 import { apiUrl } from "@/lib/api";
@@ -28,6 +29,7 @@ const nodeTypes = {
   [CanvasNodeType.ADD]: AddNode,
   [CanvasNodeType.DATASOURCE]: DatasourceNode,
   [CanvasNodeType.MCP_SERVER]: MCPServerNode,
+  [CanvasNodeType.TOOL]: ToolNode,
 };
 
 /**
