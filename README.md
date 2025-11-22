@@ -72,118 +72,56 @@ This will install dependencies for all workspaces (backend, frontend, shared).
 
 ### 3. Configure Environment Variables
 
-The application uses a **cascading environment variable system** for secure configuration management:
-
-- **Main `.env` file**: Contains sensitive data (API keys, encryption keys) - gitignored
-- **Instance files** (`.env.instance1`, `.env.instance2`, `.env.instance3`): Instance-specific settings (ports, database names) - can be version controlled
-
-Three pre-configured instance files are provided:
-
-- `.env.instance1` - Ports: Backend 3001, Frontend 5173, MySQL 3306
-- `.env.instance2` - Ports: Backend 3002, Frontend 5174, MySQL 3307
-- `.env.instance3` - Ports: Backend 3003, Frontend 5175, MySQL 3308
-
-**Important:** Add your secrets to the main `.env` file (NOT in instance files):
+Create a `.env` file in the root directory:
 
 ```bash
-# Edit the main .env file
+# Copy the example file
+cp .env.example .env
+
+# Edit the .env file
 nano .env
-
-# Ensure these are set:
-OPENAI_API_KEY=sk-your-actual-openai-api-key-here
-CREDENTIALS_ENCRYPTION_KEY=your-32-character-encryption-key-here
 ```
 
-**How it works:**
-- Sensitive data (API keys, encryption keys) stays in the main `.env` file
-- Instance files only contain instance-specific configuration (ports, database names)
-- When starting an instance, variables are loaded from `.env` first, then from `.env.instanceX`
-- Instance-specific variables override main `.env` variables if both are present
-- This keeps secrets out of version control while allowing instance configs to be committed
-
-### 4. Start an Instance
-
-Use the provided scripts to manage application instances:
+Add your configuration:
 
 ```bash
-# Start instance 1 (uses .env.instance1)
-./scripts/start-instance.sh 1
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=root
+DB_DATABASE=poc_origin
+MYSQL_ROOT_PASSWORD=root
+
+# Security Configuration
+CREDENTIALS_ENCRYPTION_KEY=your-32-character-encryption-key-here
+
+# LLM Configuration
+OPENAI_API_KEY=sk-your-actual-openai-api-key-here
+
+# Application Configuration
+BACKEND_PORT=3001
+FRONTEND_PORT=5173
 ```
 
-This script will:
+### 4. Start the Application
 
-1. Start a MySQL 9.3 container with isolated data volume
-2. Wait for MySQL to be ready
-3. Start both backend and frontend with the configured ports
+Start the MySQL database and application:
+
+```bash
+# Start MySQL container
+docker compose up -d
+
+# Start both backend and frontend
+npm run dev
+```
 
 Access the application at:
 
-- Backend: http://localhost:3001
 - Frontend: http://localhost:5173
+- Backend: http://localhost:3001
 
 The backend will automatically create the necessary database tables on first run.
-
-## Running Multiple Instances
-
-You can run multiple instances of the application concurrently, each with its own database and ports.
-
-### Quick Start - Run Multiple Instances
-
-```bash
-# Terminal 1: Start instance 1
-./scripts/start-instance.sh 1
-
-# Terminal 2: Start instance 2
-./scripts/start-instance.sh 2
-
-# Terminal 3: Start instance 3
-./scripts/start-instance.sh 3
-```
-
-Each instance runs completely isolated:
-
-| Instance | Backend | Frontend | MySQL | Database             |
-| -------- | ------- | -------- | ----- | -------------------- |
-| 1        | :3001   | :5173    | :3306 | poc_origin_instance1 |
-| 2        | :3002   | :5174    | :3307 | poc_origin_instance2 |
-| 3        | :3003   | :5175    | :3308 | poc_origin_instance3 |
-
-### Managing Instances
-
-**List all running instances:**
-
-```bash
-./scripts/list-instances.sh
-```
-
-**Stop a specific instance:**
-
-```bash
-./scripts/stop-instance.sh 1
-```
-
-**Create a new instance configuration:**
-
-```bash
-# Auto-calculate ports
-./scripts/create-instance.sh 4
-
-# Or specify custom ports
-./scripts/create-instance.sh 4 3004 5176 3309
-```
-
-After creating a new instance:
-
-1. Edit `.env.instance4` to add your OpenAI API key
-2. Start it with `./scripts/start-instance.sh 4`
-
-### Why Multiple Instances?
-
-Running multiple instances is useful for:
-
-- **Development**: Work on multiple features in parallel
-- **Testing**: Run different configurations simultaneously
-- **Comparison**: Compare different datasource configurations side-by-side
 
 ## Usage
 
@@ -401,10 +339,6 @@ This is a POC project. For production use, consider:
 [Add your license information here]
 
 ## Documentation
-
-### Instance Management
-
-- [Instance Management Guide](./INSTANCES.md) - Comprehensive guide for managing multiple concurrent instances
 
 ### Feature Specifications
 
