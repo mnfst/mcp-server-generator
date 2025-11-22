@@ -1,0 +1,61 @@
+.mcp-server-node {
+  border-radius: 10px;
+  display: flex;
+  min-width: 200px;
+  min-height: 180px;
+  box-shadow: 10px 0 15px rgba(42, 138, 246, 0.3),
+    -10px 0 15px rgba(233, 42, 103, 0.3);
+}
+
+.mcp-wrapper {
+  overflow: hidden;
+  display: flex;
+  padding: 2px;
+  position: relative;
+  border-radius: 10px;
+  flex-grow: 1;
+}
+
+.mcp-wrapper.gradient:before {
+  content: '';
+  position: absolute;
+  padding-bottom: calc(100% * 1.41421356237);
+  width: calc(100% * 1.41421356237);
+  background: conic-gradient(
+    from -160deg at 50% 50%,
+    #e92a67 0deg,
+    #a853ba 120deg,
+    #2a8af6 240deg,
+    #e92a67 360deg
+  );
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 100%;
+  animation: spinner 4s linear infinite;
+  z-index: 0;
+}
+
+@keyframes spinner {
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+.mcp-inner {
+  background: hsl(var(--card));
+  padding: 16px 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 1;
+}
+
+.mcp-inner:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}

@@ -20,8 +20,16 @@ import { DatasourceNode } from "./DatasourceNode";
 import { MCPServerNode } from "./MCPServerNode";
 import { MCPServerMenuDialog } from "../dialogs/MCPServerMenuDialog";
 import { ToolDialog } from "../dialogs/ToolDialog";
+import { Button } from "../ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { apiUrl } from "@/lib/api";
 import { CanvasNodeType, Datasource, MCPServer, Tool } from "shared";
+import { ChevronDown, Database, Server } from "lucide-react";
 
 // Custom node types mapping
 const nodeTypes = {
@@ -432,13 +440,27 @@ export function FlowCanvas({
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
 
-      {/* Layout button */}
-      <button
-        onClick={onLayout}
-        className="absolute top-20 right-4 z-10 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-      >
-        Auto Layout
-      </button>
+      {/* Create Button */}
+      <div className="absolute top-20 right-4 z-10">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" size="default">
+              Create
+              <ChevronDown className="w-4 h-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onCreateDatasource}>
+              <Database className="w-4 h-4 mr-2" />
+              Database
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onCreateMCPServer}>
+              <Server className="w-4 h-4 mr-2" />
+              MCP Server
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* MCP Server Menu Dialog */}
       {selectedMCPServer && (
