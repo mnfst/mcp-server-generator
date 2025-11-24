@@ -105,6 +105,7 @@
 - [x] T045 [P] [US1] Create frontend/src/components/canvas/AddNode.tsx custom React Flow node component displaying "+" icon with label ("Add Datasource" or "Create MCP Server"), onClick handler to open appropriate dialog
 - [x] T046 [P] [US1] Create frontend/src/components/canvas/DatasourceNode.tsx custom React Flow node component displaying datasource icon, name, and status, onClick handler to open datasource details (not implemented in US1)
 - [x] T047 [P] [US1] Create frontend/src/components/canvas/MCPServerNode.tsx custom React Flow node component displaying MCP server icon, name, and status, onClick handler to open MCP server menu dialog (not implemented in US1, placeholder for US2)
+- [ ] T095 [P] [US1] Add MCP server URL display to MCPServerNode showing /mcp/:slug endpoint for client configuration
 
 ### Frontend: Dialogs (US1)
 
@@ -163,7 +164,7 @@
 - [x] T069 [US2] Create backend/src/tools/tools.module.ts importing TypeOrmModule.forFeature([Tool]), MCPServersModule, QueryGenerationModule, DatasourcesModule, exporting ToolsService
 - [x] T070 [US2] Update backend/src/mcp-servers/mcp-runtime.service.ts method startServer to fetch all tools for MCPServer and register them as MCP SDK tools with proper parameter schemas
 
-### Frontend: Schema View (US2)
+### Frontend: Schema Viewer (US2)
 
 - [x] T071 [P] [US2] Create frontend/src/components/schema/SchemaListView.tsx with shadcn/ui Accordion displaying tables as accordion items, each table showing columns with data types, foreign keys indicated with arrow icon and target table, search input to filter tables/columns, highlighting prop to highlight tables/columns referenced in SQL query
 - [x] T072 [P] [US2] Create frontend/src/components/dialogs/SchemaViewDialog.tsx with shadcn/ui Dialog containing SchemaListView component, fetching schema via GET /api/schema/:datasourceId, "Refresh" button calling POST /api/schema/:datasourceId/refresh
@@ -186,8 +187,8 @@
 ### Integration & Tool Workflow (US2)
 
 - [x] T079 [US2] Implement tool creation workflow: MCPServerNode click → MCPServerMenuDialog opens → "Create Tool" click → ToolDialog opens → user enters natural language prompt → "Generate SQL" generates query via LLM → user reviews SQL → user enters tool name/description → "Test" executes query and shows results → "Save" creates Tool entity → create ToolNode canvas node (nodeId: 'tool-{uuid}', type: 'tool') connected to MCP server → optionally "Create Another Tool" for bulk creation
-- [x] T080 [US2] Implement schema view workflow: MCPServerNode click → MCPServerMenuDialog opens → "View Schema" click → SchemaViewDialog opens → display all tables/columns/foreign keys in Accordion → search/filter functionality → keep dialog open while creating tools for reference
-- [x] T081 [US2] Implement SQL highlighting in schema view: when ToolDialog shows generated SQL, parse table/column references and pass to SchemaListView as highlighted items
+- [x] T080 [US2] Implement Schema Viewer workflow: MCPServerNode click → MCPServerMenuDialog opens → "View Schema" click → SchemaViewDialog opens → display all tables/columns/foreign keys in Accordion → search/filter functionality → keep dialog open while creating tools for reference
+- [x] T081 [US2] Implement SQL highlighting in Schema Viewer: when ToolDialog shows generated SQL, parse table/column references and pass to SchemaListView as highlighted items
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - users can create tools via natural language, view schema, and test tools
 
@@ -229,13 +230,13 @@
 - [ ] T092 [P] Add loading states to frontend dialogs during async operations (connection test, SQL generation, tool test) with shadcn/ui Spinner component
 - [ ] T093 [P] Add error display components in frontend dialogs with specific error messages and retry buttons for LLM failures
 - [ ] T094 [P] Implement canvas node position persistence on drag in frontend/src/components/canvas/FlowCanvas.tsx onNodesChange handler calling PATCH /api/canvas/nodes/batch for efficient bulk updates
-- [ ] T095 [P] Add MCP server URL display to MCPServerNode showing /mcp/:slug endpoint for client configuration
 - [ ] T096 [P] Implement "Create Another Tool" button functionality in ToolDialog to reset form after tool creation for streamlined bulk tool creation
 - [ ] T097 [P] Add validation error displays in all frontend forms with specific field-level error messages from backend DTO validation
 - [ ] T098 [P] Implement multiple datasources support: ensure "Add Datasource" AddNode persists on canvas after first datasource created, handle multiple datasource→MCP server→tools hierarchies on single canvas
 - [ ] T099 [P] Add canvas interaction improvements: zoom controls, fit view button, minimap for large canvas, node drag constraints
 - [ ] T100 [P] Update backend/src/app.module.ts to add global exception filter for consistent error response format across all endpoints
-- [ ] T101 Validate quickstart.md workflow: follow steps in specs/001-mcp-datasource-generator/quickstart.md to connect database, create MCP server, create tools, test tools, verify MCP server accessibility, document any deviations
+- [ ] T101 [P] Verify all public methods, functions, and classes have comprehensive TSDoc/JSDoc annotations (description, @param tags for all parameters, @returns tag for return values, @throws tags for exceptions) as required by FR-055 and FR-056
+- [ ] T102 Validate quickstart.md workflow: follow steps in specs/001-mcp-datasource-generator/quickstart.md to connect database, create MCP server, create tools, test tools, verify MCP server accessibility, document any deviations
 
 ---
 

@@ -61,10 +61,10 @@ A user creates custom tools for their MCP server by describing what data they wa
 **Acceptance Scenarios**:
 
 1. **Given** an MCP server node exists on the canvas, **When** the user clicks on it, **Then** a dialog opens with options to "Create Tool" or "View Schema"
-2. **Given** the user selects "View Schema", **When** the dialog displays, **Then** the system shows all tables, columns, data types, and foreign key relationships in a simple table/list view within the dialog
+2. **Given** the user selects "View Schema", **When** the dialog displays, **Then** the system shows all tables, columns, data types, and foreign key relationships in the Schema Viewer
 3. **Given** the user selects "Create Tool", **When** the tool creation dialog opens, **Then** the user can enter a natural language prompt (e.g., "get all orders from the last 30 days")
 4. **Given** a natural language prompt is entered, **When** the user submits, **Then** the system generates an appropriate SQL query using an LLM and displays it in the dialog
-5. **Given** a generated SQL query is displayed, **When** the user reviews it, **Then** the system highlights which tables and columns are being used in the schema list view
+5. **Given** a generated SQL query is displayed, **When** the user reviews it, **Then** the system highlights which tables and columns are being used in the Schema Viewer
 6. **Given** a reviewed query, **When** the user provides a tool name and saves, **Then** the system adds the tool to the MCP server configuration and creates a tool node connected to the MCP server node on the canvas
 7. **Given** a saved tool, **When** the user tests it from the dialog, **Then** the system executes the query and displays sample results
 
@@ -100,6 +100,8 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 - What happens when datasource becomes unavailable after MCP server creation? MCP server remains accessible at /mcp/:serverSlug but returns clear error messages for tool execution requests indicating datasource connection failure
 - What happens when a user tries to delete a datasource that has connected MCP servers? System prevents deletion and displays error "Cannot delete datasource. Please delete the MCP server first."
 - What happens when a user tries to delete an MCP server that has connected tools? System prevents deletion and displays error "Cannot delete MCP server. Please delete all tools first."
+- What happens when a user modifies datasource connection details (host, port, database, username) while MCP server is active? MCP server continues running with previous connection until reactivated; tools return errors indicating datasource connection changed; user must deactivate and reactivate server with new connection details
+- What happens when OpenAI returns SQL query for wrong database type (e.g., PostgreSQL syntax instead of MySQL)? System validates generated SQL contains MySQL-compatible syntax before saving; if validation fails, displays error with regeneration option
 
 ## Requirements *(mandatory)*
 
@@ -109,26 +111,26 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 - **FR-001**: System MUST allow users to enter database connection parameters (host, port, database name, username, password)
 - **FR-002**: System MUST support MySQL database type (PostgreSQL support deferred to future iteration)
 - **FR-003**: System MUST validate database connections before allowing server generation
-- **FR-004**: System MUST retrieve and cache database schema information (tables, columns, data types, relationships), invalidating cache when datasource connection details change or when user requests manual refresh
+- **FR-004**: System MUST retrieve and cache database schema information (tables, columns, data types, relationships), invalidating cache when any of the following datasource connection details change (host, port, database name, username) or when user requests manual refresh
 - **FR-005**: System MUST encrypt datasource passwords at rest in the application database using AES-256 encryption with encryption key stored in environment variables
 
 #### MCP Server Generation
 - **FR-006**: System MUST create a persistent MCP server from a connected database, accessible at /mcp/:serverSlug
+  - Server configurations MUST be stored in the application database for persistence across backend restarts
+  - Servers MUST be served dynamically within the backend application using standard MCP protocol over HTTP with JSON-RPC 2.0
+  - Servers MUST automatically reload and start when the backend application starts
+  - Servers MUST keep running persistently once created until explicitly deleted
 - **FR-007**: System MUST generate a unique URL slug for each MCP server derived from the datasource name (converted to kebab-case), appending a numeric suffix if the name conflicts with existing servers
-- **FR-008**: System MUST serve MCP servers dynamically within the backend application using standard MCP protocol over HTTP with JSON-RPC 2.0
-- **FR-009**: System MUST store MCP server configurations in the application database for persistence across backend restarts
-- **FR-010**: System MUST automatically reload and start all MCP servers from the database when the backend application starts
-- **FR-011**: System MUST keep MCP servers running persistently once created until explicitly deleted
-- **FR-012**: System MUST keep MCP servers accessible even when datasource connection fails, returning clear error messages for tool execution requests
-- **FR-013**: System MUST allow users to update the server configuration when datasource connection details or tools change
-- **FR-014**: System MUST make all MCP servers publicly accessible without authentication (POC constraint)
+- **FR-008**: System MUST keep MCP servers accessible even when datasource connection fails, returning clear error messages for tool execution requests
+- **FR-009**: System MUST allow users to update the server configuration when datasource connection details or tools change
+- **FR-010**: System MUST make all MCP servers publicly accessible without authentication (POC constraint)
 
-#### Database Schema Display (Separate from React Flow Canvas)
-- **FR-015**: System MUST display database schema as a simple table/list view in a dialog showing tables and their columns (NOT on the React Flow canvas)
-- **FR-016**: System MUST show each table name with its columns and data types in the schema list view
-- **FR-017**: System MUST indicate foreign key relationships in the schema list view (e.g., column annotations or labels)
-- **FR-018**: System MUST provide search/filter functionality to find specific tables or columns in the schema list
-- **FR-019**: System MUST highlight tables and columns referenced in a generated SQL query within the schema list view
+#### Schema Viewer (Separate from React Flow Canvas)
+- **FR-015**: System MUST display database schema in a dialog as an expandable list view showing tables and their columns (NOT on the React Flow canvas). Minimum requirements: tables as expandable/collapsible list items, columns nested under tables showing name and data type, maximum 2-level nesting (tables → columns), basic text-based search filter
+- **FR-016**: System MUST show each table name with its columns and data types in the Schema Viewer
+- **FR-017**: System MUST indicate foreign key relationships in the Schema Viewer with arrow icon (→) and target table name annotation
+- **FR-018**: System MUST provide search/filter functionality to find specific tables or columns in the Schema Viewer
+- **FR-019**: System MUST highlight tables and columns referenced in a generated SQL query within the Schema Viewer using visual highlighting (e.g., background color, bold text)
 - **FR-020**: System MUST provide a manual refresh option to reload schema from database on user request
 
 #### LLM-Powered Query Generation
@@ -136,7 +138,7 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 - **FR-022**: System MUST use OpenAI API to convert natural language prompts into MySQL queries appropriate for the connected database
 - **FR-023**: System MUST use OpenAI API to automatically detect and extract query parameters from natural language prompts
 - **FR-024**: System MUST display the generated SQL query in a readable format with identified parameters
-- **FR-025**: System MUST allow users to manually edit generated SQL queries before saving
+- **FR-025**: System MUST allow users to manually edit generated SQL queries before saving, with validation constraints: edited query MUST remain SELECT-only (reject queries containing INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, REPLACE, GRANT, REVOKE keywords), basic MySQL syntax validation MUST be performed
 
 #### Tool Management
 - **FR-026**: System MUST allow users to save generated queries as named tools in the MCP server
@@ -145,14 +147,14 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 - **FR-029**: System MUST display all created tools in a list with basic information
 - **FR-030**: System MUST allow users to edit existing tools (name, description, prompt, SQL)
 - **FR-031**: System MUST allow users to delete tools from the MCP server
-- **FR-032**: System MUST validate tool names are unique within an MCP server
+- **FR-032**: System MUST validate tool names are unique within an MCP server using case-insensitive comparison with leading/trailing whitespace trimmed before validation
 
 #### User Experience
 - **FR-033**: System MUST provide visual feedback during LLM query generation (loading states)
 - **FR-034**: System MUST display specific error messages when LLM API failures occur (network timeout, rate limit exceeded, invalid API key, etc.) with retry button
 - **FR-035**: System MUST display clear error messages when operations fail
 - **FR-036**: System MUST show sample query results when users test tools
-- **FR-037**: System MUST display the MCP server URL (/mcp/:serverSlug) for client configuration
+- **FR-037**: System MUST display the MCP server URL (/mcp/:serverSlug) on the MCP server node immediately after server creation for client configuration
 
 #### Code Documentation
 - **FR-055**: All public methods, functions, and classes MUST include comprehensive TSDoc/JSDoc annotations
@@ -208,7 +210,7 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 
 - **SC-001**: Users can connect a database and generate a functional MCP server in under 5 minutes from start to finish
 - **SC-002**: Users can create a custom tool from a natural language prompt and have it generate valid SQL in under 30 seconds (including LLM response time)
-- **SC-003**: 90% of generated SQL queries from common natural language prompts (e.g., "get all users", "find recent orders") are syntactically valid and executable without manual editing
+- **SC-003**: 90% of generated SQL queries from common natural language prompts are syntactically valid and executable without manual editing. Test corpus of 20 representative prompts: "get all users", "find recent orders", "show top 10 customers by revenue", "list products with low inventory", "get user by email", "find orders in the last 30 days", "count active users", "show average order value by month", "list users who never ordered", "find duplicate email addresses", "get total sales by product category", "show pending orders", "list customers with addresses", "find products never ordered", "get order details with customer info", "count orders per customer", "show revenue by date range", "list users registered this year", "find orders above $100", "get product inventory status"
 - **SC-004**: Users can successfully visualize database schemas with up to 50 tables without performance degradation (diagrams load and render in under 3 seconds)
 - **SC-005**: MCP servers are accessible at /mcp/:serverSlug endpoints and respond to tool queries within 2 seconds for databases with up to 20 custom tools
 - **SC-006**: Users can complete the full workflow (connect database → generate server → create 3 tools → test tools) in under 15 minutes

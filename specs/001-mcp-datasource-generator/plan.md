@@ -89,7 +89,7 @@ Build a visual canvas-based application using React Flow that enables users to c
 **Status**: PASS
 
 - P1: Connect database + generate MCP server via React Flow canvas (MVP - foundational capability)
-- P2: Create tools via natural language + schema list view (core value)
+- P2: Create tools via natural language + Schema Viewer (core value)
 - P3: Manage/edit tools via canvas nodes (enhancement, not required for initial value)
 - Each story independently testable and deployable
 - Can stop after P1 and have working canvas-based MCP server generator
@@ -188,7 +188,7 @@ frontend/
 │   │   │   ├── MCPServerDialog.tsx
 │   │   │   ├── ToolDialog.tsx
 │   │   │   └── SchemaViewDialog.tsx
-│   │   └── schema/            # Database schema list view
+│   │   └── schema/            # Schema Viewer
 │   │       └── SchemaListView.tsx
 │   ├── pages/
 │   │   └── CanvasPage.tsx    # Main canvas page

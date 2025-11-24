@@ -7,9 +7,19 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
+/**
+ * Service responsible for managing MCP server runtime instances.
+ *
+ * Features:
+ * - Creates and manages in-memory MCP server instances
+ * - Registers request handlers for tools/list and tools/call
+ * - Converts tool definitions to MCP protocol format
+ * - Executes SQL queries through the tools system
+ */
 @Injectable()
 export class MCPRuntimeService {
   private readonly logger = new Logger(MCPRuntimeService.name);
+  /** In-memory map of active MCP server instances indexed by slug */
   private readonly servers = new Map<string, any>();
 
   constructor(
@@ -17,6 +27,21 @@ export class MCPRuntimeService {
     private readonly toolsService: ToolsService,
   ) {}
 
+  /**
+   * Starts a new MCP server runtime instance.
+   *
+   * Process:
+   * 1. Creates a new Server instance from MCP SDK
+   * 2. Loads all tools associated with this MCP server
+   * 3. Registers tools/list handler to return available tools
+   * 4. Registers tools/call handler to execute SQL queries
+   * 5. Stores server instance in memory map
+   *
+   * @param slug - Unique slug for the server instance
+   * @param mcpServerId - Database ID of the MCP server entity
+   * @param config - Server configuration with name and version
+   * @throws Error if server startup fails
+   */
   async startServer(
     slug: string,
     mcpServerId: string,
@@ -104,6 +129,9 @@ export class MCPRuntimeService {
 
   /**
    * Converts a Tool entity to MCP SDK tool format with JSON schema.
+   *
+   * @param tool - Tool entity to convert
+   * @returns MCP tool object with name, description, and JSON schema input specification
    */
   private convertToolToMCPFormat(tool: Tool) {
     const inputSchema: any = {
@@ -130,6 +158,9 @@ export class MCPRuntimeService {
 
   /**
    * Converts a ToolParameter to JSON Schema format.
+   *
+   * @param param - Tool parameter definition
+   * @returns JSON Schema object for the parameter
    */
   private convertParameterToJsonSchema(param: ToolParameter) {
     const schema: any = {
@@ -159,6 +190,11 @@ export class MCPRuntimeService {
     return schema;
   }
 
+  /**
+   * Stops an MCP server runtime instance and removes it from memory.
+   *
+   * @param slug - Unique slug of the server to stop
+   */
   async stopServer(slug: string): Promise<void> {
     const server = this.servers.get(slug);
     if (server) {
@@ -168,6 +204,11 @@ export class MCPRuntimeService {
     }
   }
 
+  /**
+   * Reloads all active MCP servers (typically called on backend startup).
+   *
+   * @param serverConfigs - Array of server configurations to reload
+   */
   async reloadAllServers(
     serverConfigs: Array<{ slug: string; mcpServerId: string; config: any }>,
   ): Promise<void> {
@@ -181,10 +222,22 @@ export class MCPRuntimeService {
     }
   }
 
+  /**
+   * Gets the runtime status of an MCP server.
+   *
+   * @param slug - Unique slug of the server
+   * @returns 'active' if server is running, 'inactive' otherwise
+   */
   getServerStatus(slug: string): 'active' | 'inactive' {
     return this.servers.has(slug) ? 'active' : 'inactive';
   }
 
+  /**
+   * Retrieves a running MCP server instance from memory.
+   *
+   * @param slug - Unique slug of the server
+   * @returns Server instance if running, undefined otherwise
+   */
   getServer(slug: string): any | undefined {
     return this.servers.get(slug);
   }
