@@ -21,6 +21,7 @@ import { MCPServerNode } from "./MCPServerNode";
 import { ToolNode } from "./ToolNode";
 import { MCPServerMenuDialog } from "../dialogs/MCPServerMenuDialog";
 import { ToolDialog } from "../dialogs/ToolDialog";
+import { SchemaViewDialog } from "../dialogs/SchemaViewDialog";
 import { Button } from "../ui/button";
 import {
   DropdownMenu,
@@ -78,6 +79,8 @@ export function FlowCanvas({
   } | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
+  const [selectedDatasource, setSelectedDatasource] = useState<Datasource | null>(null);
 
   // Fetch canvas nodes, datasources, and MCP servers from backend
   useEffect(() => {
@@ -124,20 +127,35 @@ export function FlowCanvas({
 
           if (node.type === "datasource" && node.datasourceId) {
             const datasource = datasourceMap.get(node.datasourceId);
+            const hasChildren = mcpServers.some(
+              (mcp) => mcp.datasourceId === node.datasourceId
+            );
             return {
               ...baseNode,
-              data: { datasource },
+              data: {
+                datasource,
+                onEdit: () => handleDatasourceEdit(datasource!),
+                onDelete: () => handleDatasourceDelete(node.datasourceId),
+                onViewSchema: () => handleDatasourceViewSchema(node.datasourceId),
+                hasChildren,
+              },
             };
           } else if (node.type === "mcpServer" && node.mcpServerId) {
             const mcpServer = mcpServerMap.get(node.mcpServerId);
             const datasource = mcpServer
               ? datasourceMap.get(mcpServer.datasourceId)
               : undefined;
+            const hasChildren = tools.some(
+              (tool) => tool.mcpServerId === node.mcpServerId
+            );
             return {
               ...baseNode,
               data: {
                 mcpServer,
                 onClick: () => handleMCPServerClick(mcpServer!, datasource!),
+                onEdit: () => handleMCPServerEdit(mcpServer!),
+                onDelete: () => handleMCPServerDelete(node.mcpServerId),
+                hasChildren,
               },
             };
           } else if (node.type === "tool" && node.toolId) {
@@ -239,6 +257,95 @@ export function FlowCanvas({
   const handleToolClick = (tool: Tool) => {
     setSelectedTool(tool);
     setEditDialogOpen(true);
+  };
+
+  /**
+   * Handle datasource edit
+   */
+  const handleDatasourceEdit = (datasource: Datasource) => {
+    console.log("Edit datasource:", datasource);
+    // TODO: Open datasource edit dialog
+  };
+
+  /**
+   * Handle datasource deletion
+   */
+  const handleDatasourceDelete = async (datasourceId: string) => {
+    try {
+      const response = await fetch(apiUrl(`/api/datasources/${datasourceId}`), {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete datasource");
+      }
+
+      const datasourceNodeId = `datasource-${datasourceId}`;
+
+      // Remove node
+      setNodes((nds) => nds.filter((n) => n.id !== datasourceNodeId));
+
+      // Remove edges
+      setEdges((eds) =>
+        eds.filter((e) => e.source !== datasourceNodeId && e.target !== datasourceNodeId)
+      );
+    } catch (error) {
+      console.error("Failed to delete datasource:", error);
+    }
+  };
+
+  /**
+   * Handle MCP server edit
+   */
+  const handleMCPServerEdit = (mcpServer: MCPServer) => {
+    console.log("Edit MCP server:", mcpServer);
+    // TODO: Open MCP server edit dialog
+  };
+
+  /**
+   * Handle MCP server deletion
+   */
+  const handleMCPServerDelete = async (mcpServerId: string) => {
+    try {
+      const response = await fetch(apiUrl(`/api/mcp-servers/${mcpServerId}`), {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete MCP server");
+      }
+
+      const mcpServerNodeId = `mcpServer-${mcpServerId}`;
+
+      // Remove node
+      setNodes((nds) => nds.filter((n) => n.id !== mcpServerNodeId));
+
+      // Remove edges
+      setEdges((eds) =>
+        eds.filter((e) => e.source !== mcpServerNodeId && e.target !== mcpServerNodeId)
+      );
+    } catch (error) {
+      console.error("Failed to delete MCP server:", error);
+    }
+  };
+
+  /**
+   * Handle view schema for a datasource
+   */
+  const handleDatasourceViewSchema = async (datasourceId: string) => {
+    try {
+      // Fetch datasource details
+      const response = await fetch(apiUrl(`/api/datasources/${datasourceId}`));
+      if (!response.ok) {
+        throw new Error("Failed to fetch datasource");
+      }
+      const datasource: Datasource = await response.json();
+
+      setSelectedDatasource(datasource);
+      setSchemaDialogOpen(true);
+    } catch (error) {
+      console.error("Failed to fetch datasource:", error);
+    }
   };
 
   /**
@@ -485,6 +592,16 @@ export function FlowCanvas({
           mode="edit"
           tool={selectedTool}
           onDelete={handleToolDeleted}
+        />
+      )}
+
+      {/* Schema View Dialog */}
+      {selectedDatasource && (
+        <SchemaViewDialog
+          open={schemaDialogOpen}
+          onOpenChange={setSchemaDialogOpen}
+          datasourceId={selectedDatasource.id}
+          datasourceName={selectedDatasource.name}
         />
       )}
     </div>

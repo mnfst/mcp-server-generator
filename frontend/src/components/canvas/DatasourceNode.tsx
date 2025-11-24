@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Database, CheckCircle2, XCircle, AlertCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Database, CheckCircle2, XCircle, AlertCircle, MoreVertical, Edit, Trash2, TableProperties } from 'lucide-react';
 import { Datasource } from 'shared';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +9,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 /**
  * Data structure for DatasourceNode component.
@@ -22,6 +28,8 @@ interface DatasourceNodeData {
   onEdit?: () => void;
   /** Optional callback function triggered when delete is clicked */
   onDelete?: () => void;
+  /** Optional callback function triggered when view schema is clicked */
+  onViewSchema?: () => void;
   /** Whether this node has children (disables delete) */
   hasChildren?: boolean;
 }
@@ -45,7 +53,7 @@ interface DatasourceNodeData {
  * @returns A styled datasource node with connection handles
  */
 export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => {
-  const { datasource, onEdit, onDelete, hasChildren } = data;
+  const { datasource, onEdit, onDelete, onViewSchema, hasChildren } = data;
 
   /**
    * Returns the appropriate status icon based on datasource connection status.
@@ -81,6 +89,23 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
     }
   };
 
+  /**
+   * Returns the appropriate status light color based on datasource connection status.
+   *
+   * @returns A CSS color class for the status indicator
+   */
+  const getStatusLightColor = () => {
+    switch (datasource.status) {
+      case 'connected':
+        return 'bg-green-500';
+      case 'error':
+        return 'bg-red-500';
+      case 'disconnected':
+      default:
+        return 'bg-gray-400';
+    }
+  };
+
   return (
     <>
       {/* Input handle for connections from previous nodes */}
@@ -96,6 +121,21 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
         className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer relative ${getStatusColor()}`}
         style={{ minWidth: '200px', minHeight: '180px' }}
       >
+        {/* Status Light Indicator */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="absolute top-2 left-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-help`} />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{datasource.status === 'connected' ? 'Connected' :
+                  datasource.status === 'error' ? 'Error' : 'Disconnected'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         {/* 3-dots Menu */}
         <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
           <DropdownMenu>
@@ -108,6 +148,10 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
               <DropdownMenuItem onClick={onEdit}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onViewSchema}>
+                <TableProperties className="mr-2 h-4 w-4" />
+                View Schema
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={onDelete}

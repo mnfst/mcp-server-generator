@@ -28,6 +28,14 @@
 - Q: What should happen when user tries to delete a datasource that has connected MCP servers? → A: Prevent deletion and display error message requiring user to delete MCP servers first
 - Q: What information should be displayed on each node in the React Flow canvas? → A: Minimal display - only node type icon and name for clean visual appearance
 
+### Session 2025-11-24
+
+- Q: MCP Server Transport Protocol Implementation - should the system support stdio transport (for MCP Inspector compatibility) or HTTP/JSON-RPC only? → A: HTTP/JSON-RPC only - MCP servers exposed only as HTTP endpoints at /mcp/:serverSlug, will not support standard MCP Inspector testing
+- Q: Testing and Verification of HTTP-based MCP Servers - how should users test and verify MCP servers work correctly? → A: Manual HTTP testing only - Users must manually send JSON-RPC requests to /mcp/:serverSlug using tools like Postman or curl, no built-in MCP server test client UI
+- Q: Tool Parameter Handling at Runtime - how should parameter values be substituted into SQL queries when tools are invoked? → A: String replacement using {{paramName}} placeholders in SQL, with mandatory SQL injection prevention through input validation, sanitization, and type checking
+- Q: Database Connection Management for Concurrent Requests - how should database connections be managed for each MCP server? → A: Single persistent connection per MCP server shared by all requests (simple implementation, sequential request handling)
+- Q: LLM Context for SQL Query Generation - what database schema information should be sent to the LLM when generating SQL queries? → A: Full database schema - Send complete schema (all tables, columns, data types, relationships) in every LLM request for maximum accuracy
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Connect Database and Generate MCP Server (Priority: P1)
@@ -117,9 +125,10 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 #### MCP Server Generation
 - **FR-006**: System MUST create a persistent MCP server from a connected database, accessible at /mcp/:serverSlug
   - Server configurations MUST be stored in the application database for persistence across backend restarts
-  - Servers MUST be served dynamically within the backend application using standard MCP protocol over HTTP with JSON-RPC 2.0
+  - Servers MUST be served dynamically within the backend application using MCP protocol over HTTP with JSON-RPC 2.0 (stdio transport is NOT supported; standard MCP Inspector tool will not work with these servers)
   - Servers MUST automatically reload and start when the backend application starts
   - Servers MUST keep running persistently once created until explicitly deleted
+  - Each MCP server MUST maintain a single persistent database connection shared by all incoming requests (sequential request handling)
 - **FR-007**: System MUST generate a unique URL slug for each MCP server derived from the datasource name (converted to kebab-case), appending a numeric suffix if the name conflicts with existing servers
 - **FR-008**: System MUST keep MCP servers accessible even when datasource connection fails, returning clear error messages for tool execution requests
 - **FR-009**: System MUST allow users to update the server configuration when datasource connection details or tools change
@@ -135,19 +144,21 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 
 #### LLM-Powered Query Generation
 - **FR-021**: System MUST accept natural language prompts describing desired data queries
-- **FR-022**: System MUST use OpenAI API to convert natural language prompts into MySQL queries appropriate for the connected database
-- **FR-023**: System MUST use OpenAI API to automatically detect and extract query parameters from natural language prompts
+- **FR-022**: System MUST use OpenAI API to convert natural language prompts into MySQL queries appropriate for the connected database, sending the complete database schema (all tables, columns, data types, and relationships) as context in each LLM request
+- **FR-023**: System MUST use OpenAI API to automatically detect and extract query parameters from natural language prompts, including parameter names and data types (string, number, boolean)
 - **FR-024**: System MUST display the generated SQL query in a readable format with identified parameters
 - **FR-025**: System MUST allow users to manually edit generated SQL queries before saving, with validation constraints: edited query MUST remain SELECT-only (reject queries containing INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, REPLACE, GRANT, REVOKE keywords), basic MySQL syntax validation MUST be performed
 
 #### Tool Management
 - **FR-026**: System MUST allow users to save generated queries as named tools in the MCP server
-- **FR-027**: System MUST store tool metadata (name, description, SQL query, parameters)
+- **FR-027**: System MUST store tool metadata (name, description, SQL query, parameters with their data types)
 - **FR-028**: System MUST allow users to test tools with sample parameter values before saving
 - **FR-029**: System MUST display all created tools in a list with basic information
 - **FR-030**: System MUST allow users to edit existing tools (name, description, prompt, SQL)
 - **FR-031**: System MUST allow users to delete tools from the MCP server
 - **FR-032**: System MUST validate tool names are unique within an MCP server using case-insensitive comparison with leading/trailing whitespace trimmed before validation
+- **FR-059**: System MUST use {{paramName}} placeholder syntax for parameters in SQL queries (e.g., `SELECT * FROM users WHERE id = {{userId}}`)
+- **FR-060**: System MUST implement SQL injection prevention for parameter substitution through: (1) Type validation - verify parameter values match declared types (string, number, boolean), (2) String escaping - escape single quotes, backslashes, and other SQL special characters in string parameters, (3) Numeric validation - reject non-numeric values for numeric parameters, (4) Length limits - enforce maximum length for string parameters (default 1000 characters), (5) Reject dangerous patterns - block values containing SQL keywords (UNION, SELECT, INSERT, UPDATE, DELETE, DROP, etc.) or comment sequences (--, /*, */)
 
 #### User Experience
 - **FR-033**: System MUST provide visual feedback during LLM query generation (loading states)
@@ -187,10 +198,11 @@ A user can view all tools they've created, edit their prompts or SQL queries, te
 - Users have access to a MySQL database they can connect to with appropriate credentials
 - Users have an OpenAI API key stored in .env file for query generation
 - The POC focuses on read-only queries (SELECT statements only)
-- MCP servers are served dynamically within the backend application at /mcp/:serverSlug endpoints
+- MCP servers are served dynamically within the backend application at /mcp/:serverSlug endpoints using HTTP/JSON-RPC transport only (stdio transport not supported)
 - MCP server configurations are stored in the application database and automatically reloaded on backend startup
 - No user management or authentication in POC - all MCP servers are publicly accessible to anyone with the URL
 - Database schemas are reasonably sized (under 100 tables) for effective visualization
+- MCP server testing is performed manually using HTTP clients (e.g., Postman, curl) to send JSON-RPC requests; standard MCP Inspector tool is not compatible with HTTP-only transport
 
 ### Key Entities
 
