@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MCPConnectionDialog } from '../dialogs/MCPConnectionDialog';
+import './MCPServerNode.css';
 
 /**
  * Data structure for MCPServerNode component.
