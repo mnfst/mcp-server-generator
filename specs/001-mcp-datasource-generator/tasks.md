@@ -105,7 +105,7 @@
 - [x] T045 [P] [US1] Create frontend/src/components/canvas/AddNode.tsx custom React Flow node component displaying "+" icon with label ("Add Datasource" or "Create MCP Server"), onClick handler to open appropriate dialog
 - [x] T046 [P] [US1] Create frontend/src/components/canvas/DatasourceNode.tsx custom React Flow node component displaying datasource icon, name, and status, onClick handler to open datasource details (not implemented in US1)
 - [x] T047 [P] [US1] Create frontend/src/components/canvas/MCPServerNode.tsx custom React Flow node component displaying MCP server icon, name, and status, onClick handler to open MCP server menu dialog (not implemented in US1, placeholder for US2)
-- [ ] T095 [P] [US1] Add MCP server URL display to MCPServerNode showing /mcp/:slug endpoint for client configuration
+- [x] T095 [P] [US1] Add MCP server URL display to MCPServerNode showing /mcp/:slug endpoint for client configuration
 
 ### Frontend: Dialogs (US1)
 
@@ -202,20 +202,20 @@
 
 ### Frontend: Tool Details Dialog (US3)
 
-- [ ] T082 [P] [US3] Update frontend/src/components/dialogs/ToolDialog.tsx to support both "create" and "edit" modes, in edit mode pre-populate fields with existing tool data, "Edit Prompt" button to regenerate SQL from modified prompt, "Delete" button calling DELETE /api/tools/:id with confirmation prompt
-- [ ] T083 [P] [US3] Update frontend/src/components/canvas/ToolNode.tsx onClick handler to open ToolDialog in "edit" mode with tool details pre-loaded via GET /api/tools/:id
+- [x] T082 [P] [US3] Update frontend/src/components/dialogs/ToolDialog.tsx to support both "create" and "edit" modes, in edit mode pre-populate fields with existing tool data, "Edit Prompt" button to regenerate SQL from modified prompt, "Delete" button calling DELETE /api/tools/:id with confirmation prompt
+- [x] T083 [P] [US3] Update frontend/src/components/canvas/ToolNode.tsx onClick handler to open ToolDialog in "edit" mode with tool details pre-loaded via GET /api/tools/:id
 
 ### Frontend: API Integration (US3)
 
-- [ ] T084 [US3] Create TanStack Query mutation hooks in frontend/src/services/api.ts: useUpdateTool (PATCH /api/tools/:id), useDeleteTool (DELETE /api/tools/:id), useDeleteCanvasNode (DELETE /api/canvas/nodes/:nodeId)
+- [x] T084 [US3] Create TanStack Query mutation hooks in frontend/src/services/api.ts: useUpdateTool (PATCH /api/tools/:id), useDeleteTool (DELETE /api/tools/:id), useDeleteCanvasNode (DELETE /api/canvas/nodes/:nodeId)
 
 ### Integration & Management Workflow (US3)
 
-- [ ] T085 [US3] Implement tool viewing workflow: ToolNode click → ToolDialog opens in edit mode → display tool name, description, prompt, SQL query, last modified date → user can review details
-- [ ] T086 [US3] Implement tool editing workflow: ToolDialog edit mode → user modifies prompt → "Edit Prompt" button calls useUpdateTool with new prompt → backend regenerates SQL via QueryGenerationService → dialog updates with new SQL → user reviews and saves → MCP server status set to 'draft'
-- [ ] T087 [US3] Implement tool testing with parameters workflow: ToolDialog shows "Test" button → if tool has parameters, display input fields for each parameter → user enters values → "Test" button calls POST /api/tools/:id/test with parameter values → display query results (first 10 rows) with execution time
-- [ ] T088 [US3] Implement tool deletion workflow: ToolDialog edit mode → "Delete" button shows confirmation → user confirms → call DELETE /api/tools/:id → delete ToolNode canvas node via DELETE /api/canvas/nodes/:nodeId → close dialog → remove node from canvas
-- [ ] T089 [US3] Implement deletion restrictions: update backend/src/datasources/datasources.service.ts delete method to prevent deletion if MCPServer exists (check relationship, return 409 error with message "Cannot delete datasource. Please delete the MCP server first."), update backend/src/mcp-servers/mcp-servers.service.ts delete method to prevent deletion if Tools exist (check relationship, return 409 error with message "Cannot delete MCP server. Please delete all tools first.")
+- [x] T085 [US3] Implement tool viewing workflow: ToolNode click → ToolDialog opens in edit mode → display tool name, description, prompt, SQL query, last modified date → user can review details
+- [x] T086 [US3] Implement tool editing workflow: ToolDialog edit mode → user modifies prompt → "Edit Prompt" button calls useUpdateTool with new prompt → backend regenerates SQL via QueryGenerationService → dialog updates with new SQL → user reviews and saves → MCP server status set to 'draft'
+- [x] T087 [US3] Implement tool testing with parameters workflow: ToolDialog shows "Test" button → if tool has parameters, display input fields for each parameter → user enters values → "Test" button calls POST /api/tools/:id/test with parameter values → display query results (first 10 rows) with execution time
+- [x] T088 [US3] Implement tool deletion workflow: ToolDialog edit mode → "Delete" button shows confirmation → user confirms → call DELETE /api/tools/:id → delete ToolNode canvas node via DELETE /api/canvas/nodes/:nodeId → close dialog → remove node from canvas
+- [x] T089 [US3] Implement deletion restrictions: update backend/src/datasources/datasources.service.ts delete method to prevent deletion if MCPServer exists (check relationship, return 409 error with message "Cannot delete datasource. Please delete the MCP server first."), update backend/src/mcp-servers/mcp-servers.service.ts delete method to prevent deletion if Tools exist (check relationship, return 409 error with message "Cannot delete MCP server. Please delete all tools first.")
 
 **Checkpoint**: All user stories should now be independently functional - full CRUD lifecycle for datasources, MCP servers, and tools via canvas
 
@@ -225,18 +225,18 @@
 
 **Purpose**: Improvements that affect multiple user stories and finalize the POC
 
-- [ ] T090 [P] Implement AES-256 password encryption/decryption utility in backend/src/datasources/datasources.service.ts using CREDENTIALS_ENCRYPTION_KEY from environment (encrypt before save, decrypt for connection)
-- [ ] T091 [P] Add error handling for LLM API failures in backend/src/query-generation/query-generation.service.ts (network timeout, rate limit, invalid API key) with specific error messages
-- [ ] T092 [P] Add loading states to frontend dialogs during async operations (connection test, SQL generation, tool test) with shadcn/ui Spinner component
-- [ ] T093 [P] Add error display components in frontend dialogs with specific error messages and retry buttons for LLM failures
-- [ ] T094 [P] Implement canvas node position persistence on drag in frontend/src/components/canvas/FlowCanvas.tsx onNodesChange handler calling PATCH /api/canvas/nodes/batch for efficient bulk updates
-- [ ] T096 [P] Implement "Create Another Tool" button functionality in ToolDialog to reset form after tool creation for streamlined bulk tool creation
-- [ ] T097 [P] Add validation error displays in all frontend forms with specific field-level error messages from backend DTO validation
-- [ ] T098 [P] Implement multiple datasources support: ensure "Add Datasource" AddNode persists on canvas after first datasource created, handle multiple datasource→MCP server→tools hierarchies on single canvas
-- [ ] T099 [P] Add canvas interaction improvements: zoom controls, fit view button, minimap for large canvas, node drag constraints
-- [ ] T100 [P] Update backend/src/app.module.ts to add global exception filter for consistent error response format across all endpoints
-- [ ] T101 [P] Verify all public methods, functions, and classes have comprehensive TSDoc/JSDoc annotations (description, @param tags for all parameters, @returns tag for return values, @throws tags for exceptions) as required by FR-055 and FR-056
-- [ ] T102 Validate quickstart.md workflow: follow steps in specs/001-mcp-datasource-generator/quickstart.md to connect database, create MCP server, create tools, test tools, verify MCP server accessibility, document any deviations
+- [x] T090 [P] Implement AES-256 password encryption/decryption utility in backend/src/datasources/datasources.service.ts using CREDENTIALS_ENCRYPTION_KEY from environment (encrypt before save, decrypt for connection)
+- [x] T091 [P] Add error handling for LLM API failures in backend/src/query-generation/query-generation.service.ts (network timeout, rate limit, invalid API key) with specific error messages
+- [x] T092 [P] Add loading states to frontend dialogs during async operations (connection test, SQL generation, tool test) with shadcn/ui Spinner component
+- [x] T093 [P] Add error display components in frontend dialogs with specific error messages and retry buttons for LLM failures
+- [x] T094 [P] Implement canvas node position persistence on drag in frontend/src/components/canvas/FlowCanvas.tsx onNodesChange handler calling PATCH /api/canvas/nodes/batch for efficient bulk updates
+- [x] T096 [P] Implement "Create Another Tool" button functionality in ToolDialog to reset form after tool creation for streamlined bulk tool creation
+- [x] T097 [P] Add validation error displays in all frontend forms with specific field-level error messages from backend DTO validation
+- [x] T098 [P] Implement multiple datasources support: ensure "Add Datasource" AddNode persists on canvas after first datasource created, handle multiple datasource→MCP server→tools hierarchies on single canvas
+- [x] T099 [P] Add canvas interaction improvements: zoom controls, fit view button, minimap for large canvas, node drag constraints
+- [x] T100 [P] Update backend/src/app.module.ts to add global exception filter for consistent error response format across all endpoints
+- [x] T101 [P] Verify all public methods, functions, and classes have comprehensive TSDoc/JSDoc annotations (description, @param tags for all parameters, @returns tag for return values, @throws tags for exceptions) as required by FR-055 and FR-056
+- [x] T102 Validate quickstart.md workflow: follow steps in specs/001-mcp-datasource-generator/quickstart.md to connect database, create MCP server, create tools, test tools, verify MCP server accessibility, document any deviations
 
 ---
 

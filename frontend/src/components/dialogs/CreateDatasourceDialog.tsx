@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { CreateDatasourceDto } from "shared";
+import { CreateDatasourceDto, Datasource } from "shared";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +23,14 @@ interface CreateDatasourceDialogProps {
   open: boolean;
   /** Callback function to update the open state of the dialog */
   onOpenChange: (open: boolean) => void;
-  /** Optional callback function triggered when a datasource is successfully created */
+  /** Optional callback function triggered when a datasource is successfully created/updated */
   onSuccess?: () => void;
+  /** Optional datasource to edit (enables edit mode) */
+  datasource?: Datasource;
 }
 
 /**
- * CreateDatasourceDialog component provides a form dialog for creating new MySQL datasources.
+ * CreateDatasourceDialog component provides a form dialog for creating or editing MySQL datasources.
  *
  * Features:
  * - Form validation using react-hook-form
@@ -36,6 +38,7 @@ interface CreateDatasourceDialogProps {
  * - Real-time error feedback
  * - Loading states for async operations
  * - Automatic form reset on close or success
+ * - Edit mode with pre-populated fields
  *
  * Required fields:
  * - Name: Display name for the datasource
@@ -46,12 +49,13 @@ interface CreateDatasourceDialogProps {
  * - Password: Database password
  *
  * @param props - The component props
- * @returns A dialog containing the datasource creation form
+ * @returns A dialog containing the datasource creation/edit form
  */
 export function CreateDatasourceDialog({
   open,
   onOpenChange,
   onSuccess,
+  datasource,
 }: CreateDatasourceDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,12 +63,15 @@ export function CreateDatasourceDialog({
     "idle" | "testing" | "success" | "error"
   >("idle");
 
+  const isEditMode = !!datasource;
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
     getValues,
+    setValue,
   } = useForm<CreateDatasourceDto>({
     defaultValues: {
       type: "mysql",
@@ -72,10 +79,26 @@ export function CreateDatasourceDialog({
     },
   });
 
+  // Populate form when editing
+  useEffect(() => {
+    if (datasource && open) {
+      setValue("name", datasource.name);
+      setValue("host", datasource.host);
+      setValue("port", datasource.port);
+      setValue("database", datasource.database);
+      setValue("username", datasource.username);
+      setValue("password", ""); // Don't populate password for security
+      setValue("type", "mysql");
+      // In edit mode, allow submit without re-testing if no password change
+      setTestStatus("idle");
+    }
+  }, [datasource, open, setValue]);
+
   /**
    * Tests the database connection using the current form values.
+   * In edit mode with no password change, tests using stored credentials.
    * Validates that the provided credentials and connection details are correct
-   * before allowing datasource creation.
+   * before allowing datasource creation/update.
    *
    * Updates the test status state to show visual feedback to the user.
    */
@@ -85,11 +108,25 @@ export function CreateDatasourceDialog({
 
     try {
       const formData = getValues();
-      const response = await fetch(apiUrl("/api/datasources/test"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+
+      // In edit mode without password, test using stored credentials
+      // Otherwise test with provided form data
+      const hasNewPassword = formData.password && formData.password.length > 0;
+
+      let response;
+      if (isEditMode && !hasNewPassword) {
+        // Test existing datasource with stored credentials
+        response = await fetch(apiUrl(`/api/datasources/${datasource!.id}/test`), {
+          method: "POST",
+        });
+      } else {
+        // Test with provided credentials
+        response = await fetch(apiUrl("/api/datasources/test"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -104,7 +141,7 @@ export function CreateDatasourceDialog({
   };
 
   /**
-   * Handles form submission to create a new datasource.
+   * Handles form submission to create or update a datasource.
    * Only enabled after a successful connection test.
    *
    * @param data - The validated form data containing datasource configuration
@@ -114,15 +151,20 @@ export function CreateDatasourceDialog({
     setError(null);
 
     try {
-      const response = await fetch(apiUrl("/api/datasources"), {
-        method: "POST",
+      const url = isEditMode
+        ? apiUrl(`/api/datasources/${datasource.id}`)
+        : apiUrl("/api/datasources");
+      const method = isEditMode ? "PATCH" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create datasource");
+        throw new Error(errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} datasource`);
       }
 
       reset();
@@ -131,7 +173,7 @@ export function CreateDatasourceDialog({
       onSuccess?.();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to create datasource"
+        err instanceof Error ? err.message : `Failed to ${isEditMode ? 'update' : 'create'} datasource`
       );
     } finally {
       setIsSubmitting(false);
@@ -153,9 +195,11 @@ export function CreateDatasourceDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add MySQL Datasource</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit' : 'Add'} MySQL Datasource</DialogTitle>
           <DialogDescription>
-            Connect to your MySQL database to generate MCP servers.
+            {isEditMode
+              ? 'Update your MySQL database connection settings.'
+              : 'Connect to your MySQL database to generate MCP servers.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -236,12 +280,15 @@ export function CreateDatasourceDialog({
 
             {/* Password */}
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">
+                Password
+                {isEditMode && <span className="text-muted-foreground text-xs ml-2">(leave blank to keep current)</span>}
+              </Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                {...register("password", { required: "Password is required" })}
+                {...register("password", { required: !isEditMode ? "Password is required" : false })}
               />
               {errors.password && (
                 <p className="text-sm text-red-500">
@@ -285,7 +332,7 @@ export function CreateDatasourceDialog({
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Connect
+              {isEditMode ? 'Save Changes' : 'Connect'}
             </Button>
           </DialogFooter>
         </form>

@@ -16,10 +16,13 @@ import "reactflow/dist/style.css";
 import dagre from "dagre";
 
 import { AddNode } from "./AddNode";
+import { AddMCPServerNode } from "./AddMCPServerNode";
 import { DatasourceNode } from "./DatasourceNode";
 import { MCPServerNode } from "./MCPServerNode";
 import { ToolNode } from "./ToolNode";
 import { MCPServerMenuDialog } from "../dialogs/MCPServerMenuDialog";
+import { CreateMCPServerDialog } from "../dialogs/CreateMCPServerDialog";
+import { CreateDatasourceDialog } from "../dialogs/CreateDatasourceDialog";
 import { ToolDialog } from "../dialogs/ToolDialog";
 import { SchemaViewDialog } from "../dialogs/SchemaViewDialog";
 import { Button } from "../ui/button";
@@ -39,6 +42,7 @@ const nodeTypes = {
   [CanvasNodeType.DATASOURCE]: DatasourceNode,
   [CanvasNodeType.MCP_SERVER]: MCPServerNode,
   [CanvasNodeType.TOOL]: ToolNode,
+  addMcpServer: AddMCPServerNode,
 };
 
 /**
@@ -81,6 +85,10 @@ export function FlowCanvas({
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
   const [selectedDatasource, setSelectedDatasource] = useState<Datasource | null>(null);
+  const [createMCPDialogOpen, setCreateMCPDialogOpen] = useState(false);
+  const [createMCPDatasourceId, setCreateMCPDatasourceId] = useState<string | null>(null);
+  const [editDatasourceDialogOpen, setEditDatasourceDialogOpen] = useState(false);
+  const [editingDatasource, setEditingDatasource] = useState<Datasource | null>(null);
 
   // Fetch canvas nodes, datasources, and MCP servers from backend
   useEffect(() => {
@@ -155,6 +163,7 @@ export function FlowCanvas({
                 onClick: () => handleMCPServerClick(mcpServer!, datasource!),
                 onEdit: () => handleMCPServerEdit(mcpServer!),
                 onDelete: () => handleMCPServerDelete(node.mcpServerId),
+                onActivate: () => handleMCPServerActivate(node.mcpServerId),
                 hasChildren,
               },
             };
@@ -205,6 +214,45 @@ export function FlowCanvas({
               source: mcpServerNodeId,
               target: toolNodeId,
               animated: true,
+            });
+          }
+        });
+
+        // Add "+" nodes for each datasource to create MCP servers
+        const datasourceIdsWithMCPServer = new Set(mcpServers.map((mcp) => mcp.datasourceId));
+        datasources.forEach((datasource) => {
+          // Only add "+" node if datasource is connected and doesn't have an MCP server yet
+          if (datasource.status === 'connected' && !datasourceIdsWithMCPServer.has(datasource.id)) {
+            const datasourceNodeId = `datasource-${datasource.id}`;
+            const addMcpNodeId = `add-mcp-${datasource.id}`;
+
+            // Find datasource node position - align horizontally with source handle
+            // Datasource node is 180px tall, handle at center (y + 90)
+            // Add node is 64px tall, handle at center (y + 32)
+            // So add node y = datasource y + 90 - 32 = datasource y + 58
+            const datasourceNode = flowNodes.find((n) => n.id === datasourceNodeId);
+            const position = datasourceNode
+              ? { x: datasourceNode.position.x + 260, y: datasourceNode.position.y + 58 }
+              : { x: 360, y: 158 };
+
+            // Add the small "+" node
+            flowNodes.push({
+              id: addMcpNodeId,
+              type: "addMcpServer",
+              position,
+              draggable: false,
+              data: {
+                datasourceId: datasource.id,
+                onClick: () => handleAddMCPServerClick(datasource.id),
+              },
+            });
+
+            // Add edge from datasource to add node
+            flowEdges.push({
+              id: `edge-${datasourceNodeId}-${addMcpNodeId}`,
+              source: datasourceNodeId,
+              target: addMcpNodeId,
+              style: { strokeDasharray: "5,5", stroke: "#94a3b8" },
             });
           }
         });
@@ -260,11 +308,19 @@ export function FlowCanvas({
   };
 
   /**
-   * Handle datasource edit
+   * Handle Add MCP Server node click - opens create dialog with datasource preselected
+   */
+  const handleAddMCPServerClick = (datasourceId: string) => {
+    setCreateMCPDatasourceId(datasourceId);
+    setCreateMCPDialogOpen(true);
+  };
+
+  /**
+   * Handle datasource edit - opens edit dialog
    */
   const handleDatasourceEdit = (datasource: Datasource) => {
-    console.log("Edit datasource:", datasource);
-    // TODO: Open datasource edit dialog
+    setEditingDatasource(datasource);
+    setEditDatasourceDialogOpen(true);
   };
 
   /**
@@ -300,6 +356,44 @@ export function FlowCanvas({
   const handleMCPServerEdit = (mcpServer: MCPServer) => {
     console.log("Edit MCP server:", mcpServer);
     // TODO: Open MCP server edit dialog
+  };
+
+  /**
+   * Handle MCP server activation
+   */
+  const handleMCPServerActivate = async (mcpServerId: string) => {
+    try {
+      const response = await fetch(apiUrl(`/api/mcp-servers/${mcpServerId}/activate`), {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to activate MCP server");
+      }
+
+      const updatedServer: MCPServer = await response.json();
+
+      // Update the node data to reflect the new status
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === `mcpServer-${mcpServerId}` && node.data.mcpServer) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                mcpServer: updatedServer,
+              },
+            };
+          }
+          return node;
+        })
+      );
+
+      console.log("MCP server activated successfully");
+    } catch (error) {
+      console.error("Failed to activate MCP server:", error);
+      alert("Failed to activate MCP server. Please try again.");
+    }
   };
 
   /**
@@ -604,6 +698,32 @@ export function FlowCanvas({
           datasourceName={selectedDatasource.name}
         />
       )}
+
+      {/* Create MCP Server Dialog (from + node) */}
+      <CreateMCPServerDialog
+        open={createMCPDialogOpen}
+        onOpenChange={setCreateMCPDialogOpen}
+        datasourceId={createMCPDatasourceId || undefined}
+        onSuccess={() => {
+          setCreateMCPDialogOpen(false);
+          setCreateMCPDatasourceId(null);
+          // Refresh the canvas
+          window.location.reload();
+        }}
+      />
+
+      {/* Edit Datasource Dialog */}
+      <CreateDatasourceDialog
+        open={editDatasourceDialogOpen}
+        onOpenChange={setEditDatasourceDialogOpen}
+        datasource={editingDatasource || undefined}
+        onSuccess={() => {
+          setEditDatasourceDialogOpen(false);
+          setEditingDatasource(null);
+          // Refresh the canvas
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Copy, Check } from 'lucide-react';
 import { MCPServer } from 'shared';
+import { API_BASE_URL } from '@/lib/api';
 
 interface MCPConnectionDialogProps {
   open: boolean;
@@ -45,7 +46,7 @@ export function MCPConnectionDialog({
     {
       mcpServers: {
         [mcpServer.slug]: {
-          url: `${window.location.origin}${mcpServer.mcpEndpoint}`,
+          url: `${API_BASE_URL}${mcpServer.mcpEndpoint}`,
           name: mcpServer.name,
         },
       },
@@ -60,7 +61,7 @@ export function MCPConnectionDialog({
       "mcp.servers": [
         {
           "name": mcpServer.name,
-          "url": `${window.location.origin}${mcpServer.mcpEndpoint}`,
+          "url": `${API_BASE_URL}${mcpServer.mcpEndpoint}`,
         },
       ],
     },
@@ -68,7 +69,7 @@ export function MCPConnectionDialog({
     2
   );
 
-  const curlExample = `curl -X POST ${window.location.origin}${mcpServer.mcpEndpoint} \\
+  const curlExample = `curl -X POST ${API_BASE_URL}${mcpServer.mcpEndpoint} \\
   -H "Content-Type: application/json" \\
   -d '{
     "jsonrpc": "2.0",
@@ -218,7 +219,7 @@ export function MCPConnectionDialog({
               <div className="space-y-2">
                 <p className="text-sm font-medium">Endpoint:</p>
                 <code className="block bg-slate-100 px-3 py-2 rounded text-sm">
-                  {window.location.origin}
+                  {API_BASE_URL}
                   {mcpServer.mcpEndpoint}
                 </code>
               </div>

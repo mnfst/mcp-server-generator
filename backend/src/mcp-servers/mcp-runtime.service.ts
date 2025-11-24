@@ -119,7 +119,8 @@ export class MCPRuntimeService {
         };
       });
 
-      this.servers.set(slug, server);
+      // Store server instance along with tools array for request handling
+      this.servers.set(slug, { server, tools });
       this.logger.log(`MCP server started for slug: ${slug} with ${tools.length} tools`);
     } catch (error) {
       this.logger.error(`Failed to start MCP server for slug ${slug}:`, error);
@@ -196,9 +197,9 @@ export class MCPRuntimeService {
    * @param slug - Unique slug of the server to stop
    */
   async stopServer(slug: string): Promise<void> {
-    const server = this.servers.get(slug);
-    if (server) {
-      await server.close();
+    const serverData = this.servers.get(slug);
+    if (serverData) {
+      await serverData.server.close();
       this.servers.delete(slug);
       this.logger.log(`MCP server stopped for slug: ${slug}`);
     }
@@ -240,5 +241,78 @@ export class MCPRuntimeService {
    */
   getServer(slug: string): any | undefined {
     return this.servers.get(slug);
+  }
+
+  /**
+   * Handles tools/list JSON-RPC requests by returning all available tools for a server.
+   *
+   * @param slug - Unique slug of the server
+   * @returns Tools list result in MCP format
+   */
+  async handleToolsList(slug: string): Promise<any> {
+    const serverData = this.servers.get(slug);
+    if (!serverData) {
+      throw new Error('Server not found');
+    }
+
+    return {
+      tools: serverData.tools.map((tool: any) => this.convertToolToMCPFormat(tool)),
+    };
+  }
+
+  /**
+   * Handles tools/call JSON-RPC requests by executing a specific tool.
+   *
+   * @param slug - Unique slug of the server
+   * @param params - Tool call parameters including name and arguments
+   * @returns Tool execution result in MCP format
+   */
+  async handleToolsCall(slug: string, params: any): Promise<any> {
+    const serverData = this.servers.get(slug);
+    if (!serverData) {
+      throw new Error('Server not found');
+    }
+
+    const toolName = params.name;
+    const parameters = params.arguments || {};
+
+    // Find the tool by name
+    const tool = serverData.tools.find((t: any) => t.name === toolName);
+    if (!tool) {
+      throw new Error(`Tool "${toolName}" not found`);
+    }
+
+    // Execute the tool using ToolsService
+    const result = await this.toolsService.testTool(tool.id, parameters);
+
+    if (!result.success) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error executing tool: ${result.error || 'Unknown error'}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Format the result as MCP tool response
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              rows: result.rows,
+              rowCount: result.rowCount,
+              executionTime: `${result.executionTime}ms`,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
   }
 }

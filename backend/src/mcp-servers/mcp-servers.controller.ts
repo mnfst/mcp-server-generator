@@ -9,12 +9,16 @@ import {
   Query,
   Req,
   Res,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { Observable, Subject } from 'rxjs';
 import { MCPServersService } from './mcp-servers.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
 import { CreateMCPServerDto } from '../dtos';
 import { MCPServer } from './entities/mcp-server.entity';
+import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 @Controller('api/mcp-servers')
 export class MCPServersController {
@@ -111,6 +115,9 @@ export class MCPServersController {
 // Separate controller for MCP protocol endpoints
 @Controller('mcp')
 export class MCPProtocolController {
+  /** Map of SSE message subjects for each server slug */
+  private readonly sseStreams = new Map<string, Subject<MessageEvent>>();
+
   /**
    * Creates a new instance of MCPProtocolController.
    *
@@ -123,9 +130,76 @@ export class MCPProtocolController {
   ) {}
 
   /**
+   * SSE endpoint for receiving server-to-client messages (streaming support).
+   * MCP Inspector connects here with GET + Accept: text/event-stream
+   *
+   * @param slug - The unique slug identifying the MCP server
+   * @returns Observable stream of Server-Sent Events
+   */
+  @Sse(':slug/sse')
+  async handleSSE(@Param('slug') slug: string): Promise<Observable<MessageEvent>> {
+    try {
+      // Validate server exists and is active
+      const mcpServer = await this.mcpServersService.findBySlug(slug);
+      if (mcpServer.status !== 'active') {
+        throw new Error('Server is not active');
+      }
+
+      // Create or get existing SSE stream for this server
+      if (!this.sseStreams.has(slug)) {
+        this.sseStreams.set(slug, new Subject<MessageEvent>());
+      }
+
+      const stream = this.sseStreams.get(slug)!;
+
+      // Return an Observable that sends a connection event immediately
+      return new Observable<MessageEvent>((observer) => {
+        // Send MCP endpoint message (required for SSE transport)
+        observer.next({
+          data: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'endpoint',
+            params: {
+              endpoint: `http://localhost:3001/mcp/${slug}`
+            }
+          }),
+        } as MessageEvent);
+
+        // Subscribe to the main stream for actual messages
+        const subscription = stream.subscribe({
+          next: (event) => observer.next(event),
+          error: (err) => observer.error(err),
+          complete: () => observer.complete(),
+        });
+
+        // Send keep-alive comments every 15 seconds to keep connection open
+        const keepAliveInterval = setInterval(() => {
+          observer.next({
+            data: '',  // Empty data for keep-alive
+            type: 'ping',
+          } as MessageEvent);
+        }, 15000);
+
+        // Cleanup on unsubscribe
+        return () => {
+          subscription.unsubscribe();
+          clearInterval(keepAliveInterval);
+        };
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorSubject = new Subject<MessageEvent>();
+      errorSubject.next({
+        data: JSON.stringify({ error: errorMessage }),
+      } as MessageEvent);
+      errorSubject.complete();
+      return errorSubject.asObservable();
+    }
+  }
+
+  /**
    * Handles incoming MCP (Model Context Protocol) JSON-RPC requests for a specific server.
-   * This endpoint validates that the server exists and is active, then processes the JSON-RPC request.
-   * The full MCP protocol handling will be enhanced in later phases.
+   * Processes the request through the MCP SDK server and sends response via SSE if streaming is active.
    *
    * @param slug - The unique slug identifying the MCP server to handle the request
    * @param req - The Express request object containing the JSON-RPC request body
@@ -143,7 +217,12 @@ export class MCPProtocolController {
       const mcpServer = await this.mcpServersService.findBySlug(slug);
       if (mcpServer.status !== 'active') {
         return res.status(400).json({
-          error: 'Server is not active',
+          jsonrpc: '2.0',
+          id: req.body?.id || null,
+          error: {
+            code: -32000,
+            message: 'Server is not active',
+          },
         });
       }
 
@@ -151,25 +230,75 @@ export class MCPProtocolController {
       const server = this.mcpRuntimeService.getServer(slug);
       if (!server) {
         return res.status(404).json({
-          error: 'MCP server not found',
+          jsonrpc: '2.0',
+          id: req.body?.id || null,
+          error: {
+            code: -32001,
+            message: 'MCP server not found',
+          },
         });
       }
 
-      // Handle MCP JSON-RPC request
-      // Note: Full MCP protocol handling will be enhanced in later phases
-      // For now, return a basic response
-      return res.json({
-        jsonrpc: '2.0',
-        id: req.body?.id || null,
-        result: {
-          tools: [],
-        },
-      });
+      // Process the JSON-RPC request manually
+      const jsonrpcRequest = req.body as any;
+      let response: any;
+
+      // Route the request based on method
+      if (jsonrpcRequest.method === 'tools/list') {
+        const toolsResult = await this.mcpRuntimeService.handleToolsList(slug);
+        response = {
+          jsonrpc: '2.0',
+          id: jsonrpcRequest.id,
+          result: toolsResult,
+        };
+      } else if (jsonrpcRequest.method === 'tools/call') {
+        const toolsResult = await this.mcpRuntimeService.handleToolsCall(slug, jsonrpcRequest.params);
+        response = {
+          jsonrpc: '2.0',
+          id: jsonrpcRequest.id,
+          result: toolsResult,
+        };
+      } else {
+        response = {
+          jsonrpc: '2.0',
+          id: jsonrpcRequest.id,
+          error: {
+            code: -32601,
+            message: `Method not found: ${jsonrpcRequest.method}`,
+          },
+        };
+      }
+
+      // If SSE stream exists, also send via SSE for streaming clients
+      const sseStream = this.sseStreams.get(slug);
+      if (sseStream) {
+        sseStream.next({
+          data: JSON.stringify(response),
+        } as MessageEvent);
+      }
+
+      // Always return HTTP response for non-streaming clients
+      return res.json(response);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return res.status(500).json({
-        error: errorMessage,
-      });
+      const errorResponse = {
+        jsonrpc: '2.0',
+        id: req.body?.id || null,
+        error: {
+          code: -32603,
+          message: errorMessage,
+        },
+      };
+
+      // Send error via SSE if stream exists
+      const sseStream = this.sseStreams.get(slug);
+      if (sseStream) {
+        sseStream.next({
+          data: JSON.stringify(errorResponse),
+        } as MessageEvent);
+      }
+
+      return res.status(500).json(errorResponse);
     }
   }
 }

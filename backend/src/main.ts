@@ -6,8 +6,10 @@ import { AppModule } from './app.module'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  // Security headers with Helmet
-  app.use(helmet())
+  // Security headers with Helmet (relaxed for SSE)
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP to allow SSE
+  }))
 
   // Enable CORS for all origins (POC - not for production)
   app.enableCors({

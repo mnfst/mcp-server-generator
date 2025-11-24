@@ -122,11 +122,11 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
         style={{ minWidth: '200px', minHeight: '180px' }}
       >
         {/* Status Light Indicator */}
-        <TooltipProvider>
+        <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="absolute top-2 left-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-help`} />
+                <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-default`} />
               </div>
             </TooltipTrigger>
             <TooltipContent>

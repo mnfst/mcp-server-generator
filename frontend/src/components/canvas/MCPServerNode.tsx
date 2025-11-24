@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Server, CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable } from 'lucide-react';
+import { Server, CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable, Play } from 'lucide-react';
 import { MCPServer, MCPServerStatus } from 'shared';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +30,8 @@ interface MCPServerNodeData {
   onEdit?: () => void;
   /** Optional callback function triggered when delete is clicked */
   onDelete?: () => void;
+  /** Optional callback function triggered when activate is clicked */
+  onActivate?: () => void;
   /** Whether this node has children (disables delete) */
   hasChildren?: boolean;
 }
@@ -53,7 +55,7 @@ interface MCPServerNodeData {
  * @returns A styled MCP server node with connection handles
  */
 export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
-  const { mcpServer, onEdit, onDelete, hasChildren } = data;
+  const { mcpServer, onEdit, onDelete, onActivate, hasChildren } = data;
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
 
   /**
@@ -137,11 +139,11 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
             className="mcp-inner"
           >
             {/* Status Light Indicator */}
-            <TooltipProvider>
+            <TooltipProvider delayDuration={100}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="absolute top-2 left-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-help`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-default`} />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -172,6 +174,12 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {mcpServer.status === MCPServerStatus.DRAFT && (
+                    <DropdownMenuItem onClick={onActivate} className="text-green-600 focus:text-green-600">
+                      <Play className="mr-2 h-4 w-4" />
+                      Activate Server
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={onEdit}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
@@ -209,8 +217,16 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
                   </p>
                 )}
                 {mcpServer.status === MCPServerStatus.DRAFT && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Not yet activated
+                  <div className="mt-2 px-2">
+                    <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded-full text-xs font-medium">
+                      <AlertCircle className="w-3 h-3" />
+                      Click menu to activate
+                    </span>
+                  </div>
+                )}
+                {mcpServer.status === MCPServerStatus.ERROR && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Activation failed
                   </p>
                 )}
               </div>
