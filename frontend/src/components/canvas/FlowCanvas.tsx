@@ -549,23 +549,23 @@ export function FlowCanvas({
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
 
-      {/* Create Button */}
+      {/* New Button */}
       <div className="absolute top-20 right-4 z-10">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="default" size="default">
-              Create
+              New
               <ChevronDown className="w-4 h-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onCreateDatasource}>
               <Database className="w-4 h-4 mr-2" />
-              Database
+              DB connection
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onCreateMCPServer}>
               <Server className="w-4 h-4 mr-2" />
-              MCP Server
+              MCP server
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

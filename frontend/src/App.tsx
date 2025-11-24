@@ -20,7 +20,11 @@ function App() {
     <div className="w-full h-screen bg-background">
       <div className="flex flex-col h-full">
         <header className="border-b px-4 py-3 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">MCP Datasource Generator</h1>
+          <img
+            src="https://manifest.build/assets/images/logo-poc.svg"
+            alt="Manifest"
+            className="h-8"
+          />
         </header>
         <main className="flex-1 overflow-hidden">
           <FlowCanvas
