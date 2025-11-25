@@ -1,0 +1,27 @@
+services:
+  mysql:
+    image: mysql:9.3.0
+    # container_name omitted to allow COMPOSE_PROJECT_NAME to prefix automatically
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
+      MYSQL_DATABASE: ${DB_DATABASE:-poc_origin}
+      MYSQL_USER: ${DB_USERNAME:-mcp_app}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-mcp_password}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-password}"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

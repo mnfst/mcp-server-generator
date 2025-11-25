@@ -1,0 +1,62 @@
+.tool-node {
+  border-radius: 10px;
+  display: flex;
+  min-width: 200px;
+}
+
+.tool-node {
+  box-shadow: 6px 0 10px rgba(168, 85, 247, 0.15),
+    -6px 0 10px rgba(139, 92, 246, 0.15);
+}
+
+.tool-wrapper {
+  overflow: hidden;
+  display: flex;
+  padding: 2px;
+  position: relative;
+  border-radius: 10px;
+  flex-grow: 1;
+}
+
+.tool-wrapper.gradient:before {
+  content: '';
+  position: absolute;
+  padding-bottom: calc(100% * 1.41421356237);
+  width: calc(100% * 1.41421356237);
+  background: conic-gradient(
+    from -160deg at 50% 50%,
+    #a855f7 0deg,
+    #8b5cf6 120deg,
+    #c084fc 240deg,
+    #a855f7 360deg
+  );
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 100%;
+  animation: tool-spinner 4s linear infinite;
+  z-index: 0;
+}
+
+@keyframes tool-spinner {
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+.tool-inner {
+  background: hsl(var(--card));
+  padding: 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 1;
+}
+
+.tool-inner:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
