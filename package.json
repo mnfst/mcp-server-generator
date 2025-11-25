@@ -11,6 +11,8 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev2": "npx dotenv -e .env.instance2 -- concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "dev3": "npx dotenv -e .env.instance3 -- concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces"

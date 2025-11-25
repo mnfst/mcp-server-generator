@@ -116,12 +116,18 @@ export class MCPServersService implements OnModuleInit {
 
     const savedServer = await this.mcpServerRepository.save(mcpServer);
 
+    // Get datasource canvas node position to place MCP server relative to it
+    const datasourceNodes = await this.canvasService.findByEntity('datasource', createMCPServerDto.datasourceId);
+    const datasourceNode = datasourceNodes[0];
+    const positionX = datasourceNode ? datasourceNode.positionX + 260 : 300;
+    const positionY = datasourceNode ? datasourceNode.positionY : 100;
+
     // Automatically create a canvas node for this MCP server
     await this.canvasService.create({
       nodeId: `mcpServer-${savedServer.id}`,
       type: CanvasNodeType.MCP_SERVER,
-      positionX: 300,
-      positionY: 100,
+      positionX,
+      positionY,
       mcpServerId: savedServer.id,
     });
 

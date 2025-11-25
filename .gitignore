@@ -22,8 +22,8 @@ out/
 .env*.local
 
 # Keep instance templates but ignore local modifications
-# Uncomment the line below if you want to keep instance configs private
-# .env.instance*
+.env.instance*
+!.env.instance.example
 
 # IDE
 .vscode/

@@ -17,11 +17,11 @@ export default defineConfig({
     port: parseInt(process.env.FRONTEND_PORT || '5173'),
     proxy: {
       "/api": {
-        target: `http://localhost:${process.env.BACKEND_PORT || '3001'}`,
+        target: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.BACKEND_PORT || '3001'}`,
         changeOrigin: true,
       },
       "/mcp": {
-        target: `http://localhost:${process.env.BACKEND_PORT || '3001'}`,
+        target: process.env.VITE_API_BASE_URL || `http://localhost:${process.env.BACKEND_PORT || '3001'}`,
         changeOrigin: true,
       },
     },

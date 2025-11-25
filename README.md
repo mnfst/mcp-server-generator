@@ -123,6 +123,43 @@ Access the application at:
 
 The backend will automatically create the necessary database tables on first run.
 
+## Running Multiple Instances
+
+You can run multiple isolated instances of the application simultaneously using the `./scripts/mcp` helper script.
+
+### Setup
+
+```bash
+# Create instance configurations from template
+cp .env.instance.example .env.instance1
+cp .env.instance.example .env.instance2
+
+# Edit each instance with unique ports
+# Instance 1: DB_PORT=3306, BACKEND_PORT=3001, FRONTEND_PORT=5173
+# Instance 2: DB_PORT=3316, BACKEND_PORT=3002, FRONTEND_PORT=5174
+```
+
+### Managing Instances
+
+```bash
+# Start an instance
+./scripts/mcp 1 up -d
+./scripts/mcp 2 up -d
+
+# View instance status
+./scripts/mcp 1 ps
+./scripts/mcp 2 ps
+
+# View logs
+./scripts/mcp 1 logs -f
+
+# Stop an instance
+./scripts/mcp 1 down
+./scripts/mcp 2 down
+```
+
+Each instance gets isolated containers, volumes, and networks automatically prefixed with `mcp-inst<N>`.
+
 ## Usage
 
 ### Connecting a Database
