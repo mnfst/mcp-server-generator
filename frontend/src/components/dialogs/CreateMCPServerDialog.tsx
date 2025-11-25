@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { CreateMCPServerDto, Datasource } from 'shared';
+import { CreateMCPServerDto, Datasource, MCPServer } from 'shared';
 import {
   Dialog,
   DialogContent,
@@ -30,14 +30,16 @@ interface CreateMCPServerDialogProps {
   open: boolean;
   /** Callback function to update the open state of the dialog */
   onOpenChange: (open: boolean) => void;
-  /** Optional callback function triggered when an MCP server is successfully created */
+  /** Optional callback function triggered when an MCP server is successfully created/updated */
   onSuccess?: () => void;
   /** Optional pre-selected datasource ID to link the MCP server to */
   datasourceId?: string;
+  /** Optional MCP server to edit (enables edit mode) */
+  mcpServer?: MCPServer;
 }
 
 /**
- * CreateMCPServerDialog component provides a form dialog for creating new MCP (Model Context Protocol) servers.
+ * CreateMCPServerDialog component provides a form dialog for creating or editing MCP servers.
  *
  * Features:
  * - Form validation using react-hook-form
@@ -47,26 +49,24 @@ interface CreateMCPServerDialogProps {
  * - Loading states for async operations
  * - Automatic form reset on close or success
  * - Support for pre-selecting a datasource via props
- *
- * Required fields:
- * - Datasource: Connected datasource to generate the MCP server from
- * - Name: Display name for the MCP server
- * - Slug: URL-safe identifier (auto-generated from name)
- * - Version: Server version (default: 1.0.0)
+ * - Edit mode with pre-populated fields
  *
  * @param props - The component props
- * @returns A dialog containing the MCP server creation form
+ * @returns A dialog containing the MCP server creation/edit form
  */
 export function CreateMCPServerDialog({
   open,
   onOpenChange,
   onSuccess,
   datasourceId,
+  mcpServer,
 }: CreateMCPServerDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [datasources, setDatasources] = useState<Datasource[]>([]);
   const [loadingDatasources, setLoadingDatasources] = useState(true);
+
+  const isEditMode = !!mcpServer;
 
   const {
     register,
@@ -84,16 +84,25 @@ export function CreateMCPServerDialog({
   const selectedDatasourceId = watch('datasourceId');
   const nameValue = watch('name');
 
-  // Auto-generate slug from name
+  // Populate form when editing
   useEffect(() => {
-    if (nameValue) {
+    if (mcpServer && open) {
+      setValue('name', mcpServer.name);
+      setValue('slug', mcpServer.slug);
+      setValue('datasourceId', mcpServer.datasourceId);
+    }
+  }, [mcpServer, open, setValue]);
+
+  // Auto-generate slug from name (only in create mode)
+  useEffect(() => {
+    if (nameValue && !isEditMode) {
       const slug = nameValue
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
       setValue('slug', slug);
     }
-  }, [nameValue, setValue]);
+  }, [nameValue, setValue, isEditMode]);
 
   // Load datasources
   useEffect(() => {
@@ -105,8 +114,8 @@ export function CreateMCPServerDialog({
           const data = await response.json();
           setDatasources(data);
 
-          // Set datasourceId if provided via props
-          if (datasourceId && !selectedDatasourceId) {
+          // Set datasourceId if provided via props (only in create mode)
+          if (!isEditMode && datasourceId && !selectedDatasourceId) {
             setValue('datasourceId', datasourceId);
           }
         } catch (err) {
@@ -118,11 +127,10 @@ export function CreateMCPServerDialog({
 
       fetchDatasources();
     }
-  }, [open, datasourceId, selectedDatasourceId, setValue]);
+  }, [open, datasourceId, selectedDatasourceId, setValue, isEditMode]);
 
   /**
-   * Handles form submission to create a new MCP server.
-   * Validates that a datasource is selected before submitting.
+   * Handles form submission to create or update an MCP server.
    *
    * @param data - The validated form data containing MCP server configuration
    */
@@ -131,22 +139,27 @@ export function CreateMCPServerDialog({
     setError(null);
 
     try {
-      const response = await fetch(apiUrl('/api/mcp-servers'), {
-        method: 'POST',
+      const url = isEditMode
+        ? apiUrl(`/api/mcp-servers/${mcpServer.id}`)
+        : apiUrl('/api/mcp-servers');
+      const method = isEditMode ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create MCP server');
+        throw new Error(errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} MCP server`);
       }
 
       reset();
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create MCP server');
+      setError(err instanceof Error ? err.message : `Failed to ${isEditMode ? 'update' : 'create'} MCP server`);
     } finally {
       setIsSubmitting(false);
     }
@@ -166,9 +179,11 @@ export function CreateMCPServerDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Create MCP Server</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit' : 'Create'} MCP Server</DialogTitle>
           <DialogDescription>
-            Generate a new MCP server from a connected datasource.
+            {isEditMode
+              ? 'Update your MCP server settings.'
+              : 'Generate a new MCP server from a connected datasource.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -190,13 +205,14 @@ export function CreateMCPServerDialog({
                 <Select
                   value={selectedDatasourceId}
                   onValueChange={(value) => setValue('datasourceId', value)}
+                  disabled={isEditMode}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a datasource" />
                   </SelectTrigger>
                   <SelectContent>
                     {datasources
-                      .filter((ds) => ds.status === 'connected')
+                      .filter((ds) => ds.status === 'connected' || ds.id === mcpServer?.datasourceId)
                       .map((ds) => (
                         <SelectItem key={ds.id} value={ds.id}>
                           {ds.name} ({ds.host}:{ds.port}/{ds.database})
@@ -204,6 +220,11 @@ export function CreateMCPServerDialog({
                       ))}
                   </SelectContent>
                 </Select>
+              )}
+              {isEditMode && (
+                <p className="text-xs text-muted-foreground">
+                  Datasource cannot be changed after creation.
+                </p>
               )}
               {errors.datasourceId && (
                 <p className="text-sm text-red-500">{errors.datasourceId.message}</p>
@@ -223,7 +244,7 @@ export function CreateMCPServerDialog({
               )}
             </div>
 
-            {/* Slug (auto-generated) */}
+            {/* Slug (auto-generated in create mode, editable in edit mode) */}
             <div className="grid gap-2">
               <Label htmlFor="slug">Slug</Label>
               <Input
@@ -238,22 +259,13 @@ export function CreateMCPServerDialog({
                 })}
               />
               <p className="text-xs text-muted-foreground">
-                Auto-generated from name. Used in MCP endpoint URL: /mcp/your-slug
+                {isEditMode
+                  ? 'Warning: Changing the slug will change the MCP endpoint URL.'
+                  : 'Auto-generated from name. Used in MCP endpoint URL: /mcp/your-slug'}
               </p>
               {errors.slug && (
                 <p className="text-sm text-red-500">{errors.slug.message}</p>
               )}
-            </div>
-
-            {/* Version */}
-            <div className="grid gap-2">
-              <Label htmlFor="version">Version</Label>
-              <Input
-                id="version"
-                placeholder="1.0.0"
-                defaultValue="1.0.0"
-                {...register('version')}
-              />
             </div>
 
             {/* Error Message */}
@@ -269,7 +281,7 @@ export function CreateMCPServerDialog({
               disabled={isSubmitting || datasources.length === 0 || !selectedDatasourceId}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create Server
+              {isEditMode ? 'Save Changes' : 'Create Server'}
             </Button>
           </DialogFooter>
         </form>

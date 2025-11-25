@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Server, CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable, Play } from 'lucide-react';
+import { CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable, Play, Wrench, FolderOpen, MessageSquare } from 'lucide-react';
+import { MCPIcon } from '../icons/MCPIcon';
 import { MCPServer, MCPServerStatus } from 'shared';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +35,8 @@ interface MCPServerNodeData {
   onActivate?: () => void;
   /** Whether this node has children (disables delete) */
   hasChildren?: boolean;
+  /** Number of tools associated with this MCP server */
+  toolCount?: number;
 }
 
 /**
@@ -55,7 +58,7 @@ interface MCPServerNodeData {
  * @returns A styled MCP server node with connection handles
  */
 export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
-  const { mcpServer, onEdit, onDelete, onActivate, hasChildren } = data;
+  const { mcpServer, onEdit, onDelete, onActivate, hasChildren, toolCount = 0 } = data;
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
 
   /**
@@ -109,19 +112,6 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
     }
   };
 
-  /**
-   * Constructs the MCP endpoint URL for the server.
-   * Uses custom endpoint if configured, otherwise generates from slug.
-   *
-   * @returns The MCP endpoint URL string
-   */
-  const getEndpointUrl = () => {
-    if (mcpServer.mcpEndpoint) {
-      return mcpServer.mcpEndpoint;
-    }
-    return `/mcp/${mcpServer.slug}`;
-  };
-
   return (
     <>
       {/* Input handle for connections from datasource nodes */}
@@ -143,7 +133,7 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="absolute top-2 left-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-default`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-default ${mcpServer.status === MCPServerStatus.ACTIVE ? 'status-light-active' : ''}`} />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -199,7 +189,7 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
             <div className="flex flex-col items-center gap-3 h-full">
               {/* Icon */}
               <div className="w-12 h-12 rounded-md bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                <Server className="w-6 h-6 text-blue-500" />
+                <MCPIcon className="w-6 h-6 text-blue-500" />
               </div>
 
               {/* Content */}
@@ -212,9 +202,50 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
                   /{mcpServer.slug}
                 </p>
                 {mcpServer.status === MCPServerStatus.ACTIVE && (
-                  <p className="text-xs text-blue-500 mt-1 truncate font-mono px-2">
-                    {getEndpointUrl()}
-                  </p>
+                  <>
+                    {/* MCP Capabilities */}
+                    <div className="flex items-center justify-center gap-3 mt-3 text-xs text-muted-foreground">
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 cursor-default">
+                              <Wrench className="w-3.5 h-3.5 text-purple-500" />
+                              <span className={toolCount > 0 ? 'text-foreground font-medium' : ''}>{toolCount}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{toolCount} tool{toolCount !== 1 ? 's' : ''}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 opacity-50 cursor-default">
+                              <FolderOpen className="w-3.5 h-3.5 text-orange-500" />
+                              <span>0</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>0 resources (coming soon)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1 opacity-50 cursor-default">
+                              <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                              <span>0</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>0 prompts (coming soon)</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </>
                 )}
                 {mcpServer.status === MCPServerStatus.DRAFT && (
                   <div className="mt-2 px-2">

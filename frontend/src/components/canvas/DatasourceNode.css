@@ -1,0 +1,117 @@
+.datasource-node {
+  border-radius: 10px;
+  display: flex;
+  min-width: 200px;
+  min-height: 180px;
+}
+
+/* Connected state - green gradient */
+.datasource-node.connected {
+  box-shadow: 6px 0 10px rgba(34, 197, 94, 0.15),
+    -6px 0 10px rgba(16, 185, 129, 0.15);
+}
+
+/* Error state - red gradient */
+.datasource-node.error {
+  box-shadow: 6px 0 10px rgba(239, 68, 68, 0.15),
+    -6px 0 10px rgba(220, 38, 38, 0.15);
+}
+
+/* Disconnected state - gray gradient */
+.datasource-node.disconnected {
+  box-shadow: 6px 0 10px rgba(156, 163, 175, 0.15),
+    -6px 0 10px rgba(107, 114, 128, 0.15);
+}
+
+.datasource-wrapper {
+  overflow: hidden;
+  display: flex;
+  padding: 2px;
+  position: relative;
+  border-radius: 10px;
+  flex-grow: 1;
+}
+
+.datasource-wrapper.gradient:before {
+  content: '';
+  position: absolute;
+  padding-bottom: calc(100% * 1.41421356237);
+  width: calc(100% * 1.41421356237);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 100%;
+  animation: datasource-spinner 4s linear infinite;
+  z-index: 0;
+}
+
+/* Connected gradient - green tones */
+.datasource-wrapper.gradient.connected:before {
+  background: conic-gradient(
+    from -160deg at 50% 50%,
+    #22c55e 0deg,
+    #10b981 120deg,
+    #34d399 240deg,
+    #22c55e 360deg
+  );
+}
+
+/* Error gradient - red tones */
+.datasource-wrapper.gradient.error:before {
+  background: conic-gradient(
+    from -160deg at 50% 50%,
+    #ef4444 0deg,
+    #dc2626 120deg,
+    #f87171 240deg,
+    #ef4444 360deg
+  );
+}
+
+/* Disconnected gradient - gray tones */
+.datasource-wrapper.gradient.disconnected:before {
+  background: conic-gradient(
+    from -160deg at 50% 50%,
+    #9ca3af 0deg,
+    #6b7280 120deg,
+    #d1d5db 240deg,
+    #9ca3af 360deg
+  );
+}
+
+@keyframes datasource-spinner {
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+}
+
+.datasource-inner {
+  background: hsl(var(--card));
+  padding: 16px 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 1;
+}
+
+.datasource-inner:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+/* Blinking animation for connected status */
+.status-light-connected {
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}

@@ -7,8 +7,6 @@ import ReactFlow, {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
-  Connection,
-  addEdge,
   NodeChange,
   applyNodeChanges,
 } from "reactflow";
@@ -89,6 +87,8 @@ export function FlowCanvas({
   const [createMCPDatasourceId, setCreateMCPDatasourceId] = useState<string | null>(null);
   const [editDatasourceDialogOpen, setEditDatasourceDialogOpen] = useState(false);
   const [editingDatasource, setEditingDatasource] = useState<Datasource | null>(null);
+  const [editMCPServerDialogOpen, setEditMCPServerDialogOpen] = useState(false);
+  const [editingMCPServer, setEditingMCPServer] = useState<MCPServer | null>(null);
 
   // Fetch canvas nodes, datasources, and MCP servers from backend
   useEffect(() => {
@@ -153,9 +153,10 @@ export function FlowCanvas({
             const datasource = mcpServer
               ? datasourceMap.get(mcpServer.datasourceId)
               : undefined;
-            const hasChildren = tools.some(
+            const mcpServerTools = tools.filter(
               (tool) => tool.mcpServerId === node.mcpServerId
             );
+            const hasChildren = mcpServerTools.length > 0;
             return {
               ...baseNode,
               data: {
@@ -165,6 +166,7 @@ export function FlowCanvas({
                 onDelete: () => handleMCPServerDelete(node.mcpServerId),
                 onActivate: () => handleMCPServerActivate(node.mcpServerId),
                 hasChildren,
+                toolCount: mcpServerTools.length,
               },
             };
           } else if (node.type === "tool" && node.toolId) {
@@ -174,6 +176,8 @@ export function FlowCanvas({
               data: {
                 tool,
                 onClick: () => handleToolClick(tool!),
+                onEdit: () => handleToolClick(tool!),
+                onDelete: () => handleToolDelete(node.toolId),
               },
             };
           }
@@ -351,11 +355,11 @@ export function FlowCanvas({
   };
 
   /**
-   * Handle MCP server edit
+   * Handle MCP server edit - opens edit dialog
    */
   const handleMCPServerEdit = (mcpServer: MCPServer) => {
-    console.log("Edit MCP server:", mcpServer);
-    // TODO: Open MCP server edit dialog
+    setEditingMCPServer(mcpServer);
+    setEditMCPServerDialogOpen(true);
   };
 
   /**
@@ -462,6 +466,25 @@ export function FlowCanvas({
   };
 
   /**
+   * Handle tool delete from dropdown menu - deletes from backend and removes from canvas
+   */
+  const handleToolDelete = async (toolId: string) => {
+    try {
+      const response = await fetch(apiUrl(`/api/tools/${toolId}`), {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete tool");
+      }
+
+      handleToolDeleted(toolId);
+    } catch (error) {
+      console.error("Failed to delete tool:", error);
+    }
+  };
+
+  /**
    * Handle tool creation - create canvas node and edge
    */
   const handleToolCreated = async (tool: Tool) => {
@@ -558,16 +581,6 @@ export function FlowCanvas({
   );
 
   /**
-   * Handles new connections between nodes.
-   *
-   * @param connection - The connection object containing source and target node information
-   */
-  const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges]
-  );
-
-  /**
    * Applies automatic layout to all nodes using the Dagre graph layout algorithm.
    * Arranges nodes in a left-to-right hierarchical layout and persists positions to the backend.
    *
@@ -634,8 +647,8 @@ export function FlowCanvas({
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onConnect={onConnect}
         nodeTypes={nodeTypes}
+        nodesConnectable={false}
         fitView
         attributionPosition="bottom-left"
       >
@@ -672,8 +685,6 @@ export function FlowCanvas({
           onOpenChange={setMenuDialogOpen}
           mcpServerId={selectedMCPServer.mcpServer.id}
           mcpServerName={selectedMCPServer.mcpServer.name}
-          datasourceId={selectedMCPServer.datasource.id}
-          datasourceName={selectedMCPServer.datasource.name}
           onToolCreated={handleToolCreated}
         />
       )}
@@ -720,6 +731,19 @@ export function FlowCanvas({
         onSuccess={() => {
           setEditDatasourceDialogOpen(false);
           setEditingDatasource(null);
+          // Refresh the canvas
+          window.location.reload();
+        }}
+      />
+
+      {/* Edit MCP Server Dialog */}
+      <CreateMCPServerDialog
+        open={editMCPServerDialogOpen}
+        onOpenChange={setEditMCPServerDialogOpen}
+        mcpServer={editingMCPServer || undefined}
+        onSuccess={() => {
+          setEditMCPServerDialogOpen(false);
+          setEditingMCPServer(null);
           // Refresh the canvas
           window.location.reload();
         }}

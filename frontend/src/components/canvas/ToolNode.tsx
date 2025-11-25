@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import './ToolNode.css';
 
 /**
  * Data structure for ToolNode component.
@@ -49,79 +50,77 @@ export const ToolNode = memo(({ data }: NodeProps<ToolNodeData>) => {
   };
 
   return (
-    <div
-      className="rounded-lg border-2 border-purple-400 bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer min-w-[200px] relative"
-      onClick={handleClick}
-    >
+    <>
       {/* Input Handle (connects to MCP Server) */}
       <Handle
         type="target"
         position={Position.Left}
         className="!bg-purple-500 !w-3 !h-3"
+        style={{ left: -6 }}
       />
 
-      {/* 3-dots Menu */}
-      <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onDelete}
-              disabled={hasChildren}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <div className="tool-node">
+        <div className="tool-wrapper gradient">
+          <div
+            className="tool-inner"
+            onClick={handleClick}
+          >
+            {/* 3-dots Menu */}
+            <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={onDelete}
+                    disabled={hasChildren}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
-      {/* Node Content */}
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-100">
-            <Wrench className="h-4 w-4 text-purple-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-sm text-gray-900 truncate">
-              {tool.name}
-            </h3>
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-purple-500/10">
+                <Wrench className="h-4 w-4 text-purple-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm truncate">
+                  {tool.name}
+                </h3>
+              </div>
+            </div>
+
+            {/* Description */}
+            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+              {tool.description}
+            </p>
+
+            {/* Parameters Count */}
+            {tool.parameters && Object.keys(tool.parameters).length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span className="rounded-full bg-purple-100 px-2 py-0.5 font-medium text-purple-700">
+                  {Object.keys(tool.parameters).length} param
+                  {Object.keys(tool.parameters).length > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Description */}
-        <p className="text-xs text-gray-600 line-clamp-2 mb-2">
-          {tool.description}
-        </p>
-
-        {/* Parameters Count */}
-        {tool.parameters && Object.keys(tool.parameters).length > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <span className="rounded-full bg-purple-100 px-2 py-0.5 font-medium text-purple-700">
-              {Object.keys(tool.parameters).length} param
-              {Object.keys(tool.parameters).length > 1 ? 's' : ''}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Output Handle (for future connections if needed) */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="!bg-purple-500 !w-3 !h-3"
-      />
-    </div>
+    </>
   );
 });
 

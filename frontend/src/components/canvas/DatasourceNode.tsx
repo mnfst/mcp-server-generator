@@ -15,6 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import './DatasourceNode.css';
 
 /**
  * Data structure for DatasourceNode component.
@@ -106,83 +107,95 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
     }
   };
 
+  /**
+   * Returns the appropriate handle color based on datasource connection status.
+   *
+   * @returns A CSS color class for the handle
+   */
+  const getHandleColor = () => {
+    switch (datasource.status) {
+      case 'connected':
+        return '!bg-green-500';
+      case 'error':
+        return '!bg-red-500';
+      case 'disconnected':
+      default:
+        return '!bg-gray-400';
+    }
+  };
+
   return (
     <>
-      {/* Input handle for connections from previous nodes */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="w-3 h-3 !bg-primary"
-        style={{ left: -6 }}
-      />
+      <div className={`datasource-node ${datasource.status}`}>
+        <div className={`datasource-wrapper gradient ${datasource.status}`}>
+          <div
+            onClick={data.onClick}
+            className="datasource-inner"
+          >
+            {/* Status Light Indicator */}
+            <TooltipProvider delayDuration={100}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute top-2 left-2">
+                    <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-default ${datasource.status === 'connected' ? 'status-light-connected' : ''}`} />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{datasource.status === 'connected' ? 'Connected' :
+                      datasource.status === 'error' ? 'Error' : 'Disconnected'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-      <div
-        onClick={data.onClick}
-        className={`px-4 py-4 rounded-lg border-2 bg-card hover:shadow-lg transition-all cursor-pointer relative ${getStatusColor()}`}
-        style={{ minWidth: '200px', minHeight: '180px' }}
-      >
-        {/* Status Light Indicator */}
-        <TooltipProvider delayDuration={100}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="absolute top-2 left-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${getStatusLightColor()} shadow-sm cursor-default`} />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{datasource.status === 'connected' ? 'Connected' :
-                  datasource.status === 'error' ? 'Error' : 'Disconnected'}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {/* 3-dots Menu */}
-        <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onEdit}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onViewSchema}>
-                <TableProperties className="mr-2 h-4 w-4" />
-                View Schema
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={onDelete}
-                disabled={hasChildren}
-                className="text-destructive focus:text-destructive"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="flex flex-col items-center gap-3 h-full">
-          {/* Icon */}
-          <div className="w-12 h-12 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <Database className="w-6 h-6 text-primary" />
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 flex flex-col justify-center w-full text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <h3 className="font-semibold text-sm truncate">{datasource.name}</h3>
-              {getStatusIcon()}
+            {/* 3-dots Menu */}
+            <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onViewSchema}>
+                    <TableProperties className="mr-2 h-4 w-4" />
+                    View Schema
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={onDelete}
+                    disabled={hasChildren}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-            <p className="text-xs text-muted-foreground truncate px-2">
-              {datasource.host}:{datasource.port}/{datasource.database}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 capitalize">
-              {datasource.type}
-            </p>
+
+            <div className="flex flex-col items-center gap-3 h-full">
+              {/* Icon */}
+              <div className="w-12 h-12 rounded-md bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                <Database className="w-6 h-6 text-green-500" />
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 flex flex-col justify-center w-full text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <h3 className="font-semibold text-sm truncate">{datasource.name}</h3>
+                  {getStatusIcon()}
+                </div>
+                <p className="text-xs text-muted-foreground truncate px-2">
+                  {datasource.host}:{datasource.port}/{datasource.database}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 capitalize">
+                  {datasource.type}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -191,7 +204,7 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 !bg-primary"
+        className={`w-3 h-3 ${getHandleColor()}`}
         style={{ right: -6 }}
       />
     </>

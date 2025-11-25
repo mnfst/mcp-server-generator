@@ -7,9 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Database } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { ToolDialog } from './ToolDialog';
-import { SchemaViewDialog } from './SchemaViewDialog';
 import { Tool } from 'shared';
 
 interface MCPServerMenuDialogProps {
@@ -21,10 +20,6 @@ interface MCPServerMenuDialogProps {
   mcpServerId: string;
   /** MCP Server name for display */
   mcpServerName: string;
-  /** Datasource ID for schema viewing */
-  datasourceId: string;
-  /** Datasource name for display */
-  datasourceName?: string;
   /** Optional callback when tool is created */
   onToolCreated?: (tool: Tool) => void;
 }
@@ -34,7 +29,6 @@ interface MCPServerMenuDialogProps {
  *
  * Features:
  * - "Create Tool" button opens ToolDialog
- * - "View Schema" button opens SchemaViewDialog
  * - Manages child dialog states
  */
 export function MCPServerMenuDialog({
@@ -42,19 +36,12 @@ export function MCPServerMenuDialog({
   onOpenChange,
   mcpServerId,
   mcpServerName,
-  datasourceId,
-  datasourceName,
   onToolCreated,
 }: MCPServerMenuDialogProps) {
   const [toolDialogOpen, setToolDialogOpen] = useState(false);
-  const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
 
   const handleCreateTool = () => {
     setToolDialogOpen(true);
-  };
-
-  const handleViewSchema = () => {
-    setSchemaDialogOpen(true);
   };
 
   const handleToolCreated = (tool: Tool) => {
@@ -92,25 +79,6 @@ export function MCPServerMenuDialog({
                 </div>
               </div>
             </Button>
-
-            {/* View Schema Button */}
-            <Button
-              onClick={handleViewSchema}
-              className="h-auto flex-col items-start gap-2 p-4"
-              variant="outline"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                  <Database className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="text-left">
-                  <div className="font-semibold">View Schema</div>
-                  <div className="text-xs text-muted-foreground font-normal">
-                    Browse database tables, columns, and relationships
-                  </div>
-                </div>
-              </div>
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -122,13 +90,6 @@ export function MCPServerMenuDialog({
         mode="create"
         mcpServerId={mcpServerId}
         onSuccess={handleToolCreated}
-      />
-
-      <SchemaViewDialog
-        open={schemaDialogOpen}
-        onOpenChange={setSchemaDialogOpen}
-        datasourceId={datasourceId}
-        datasourceName={datasourceName}
       />
     </>
   );
