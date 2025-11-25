@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  OnModuleInit,
+  Logger,
 } from "@nestjs/common";
 import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
@@ -13,7 +15,8 @@ import { MCPRuntimeService } from "./mcp-runtime.service";
 import { CanvasService } from "../canvas/canvas.service";
 
 @Injectable()
-export class MCPServersService {
+export class MCPServersService implements OnModuleInit {
+  private readonly logger = new Logger(MCPServersService.name);
   /**
    * Creates a new instance of MCPServersService.
    *
@@ -31,6 +34,32 @@ export class MCPServersService {
     private mcpRuntimeService: MCPRuntimeService,
     private canvasService: CanvasService
   ) {}
+
+  /**
+   * Lifecycle hook that runs when the module is initialized.
+   * Automatically reloads all active MCP servers on backend startup.
+   */
+  async onModuleInit(): Promise<void> {
+    this.logger.log("Reloading active MCP servers on startup...");
+
+    const activeServers = await this.mcpServerRepository.find({
+      where: { status: MCPServerStatus.ACTIVE },
+    });
+
+    for (const server of activeServers) {
+      try {
+        await this.mcpRuntimeService.startServer(server.slug, server.id, {
+          name: server.name,
+          version: "1.0.0",
+        });
+        this.logger.log(`Reloaded MCP server: ${server.name} (${server.slug})`);
+      } catch (error) {
+        this.logger.error(`Failed to reload MCP server ${server.slug}:`, error);
+      }
+    }
+
+    this.logger.log(`Reloaded ${activeServers.length} active MCP server(s)`);
+  }
 
   /**
    * Generates a URL-safe slug from a base name.

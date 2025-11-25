@@ -9,16 +9,12 @@ import {
   Query,
   Req,
   Res,
-  Sse,
-  MessageEvent,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Observable, Subject } from 'rxjs';
 import { MCPServersService } from './mcp-servers.service';
 import { MCPRuntimeService } from './mcp-runtime.service';
 import { CreateMCPServerDto } from '../dtos';
 import { MCPServer } from './entities/mcp-server.entity';
-import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 @Controller('api/mcp-servers')
 export class MCPServersController {
@@ -112,11 +108,11 @@ export class MCPServersController {
   }
 }
 
-// Separate controller for MCP protocol endpoints
+// Separate controller for MCP protocol endpoints (Streamable HTTP transport)
 @Controller('mcp')
 export class MCPProtocolController {
-  /** Map of SSE message subjects for each server slug */
-  private readonly sseStreams = new Map<string, Subject<MessageEvent>>();
+  /** Map of session IDs to their associated server slugs */
+  private readonly sessions = new Map<string, string>();
 
   /**
    * Creates a new instance of MCPProtocolController.
@@ -130,76 +126,8 @@ export class MCPProtocolController {
   ) {}
 
   /**
-   * SSE endpoint for receiving server-to-client messages (streaming support).
-   * MCP Inspector connects here with GET + Accept: text/event-stream
-   *
-   * @param slug - The unique slug identifying the MCP server
-   * @returns Observable stream of Server-Sent Events
-   */
-  @Sse(':slug/sse')
-  async handleSSE(@Param('slug') slug: string): Promise<Observable<MessageEvent>> {
-    try {
-      // Validate server exists and is active
-      const mcpServer = await this.mcpServersService.findBySlug(slug);
-      if (mcpServer.status !== 'active') {
-        throw new Error('Server is not active');
-      }
-
-      // Create or get existing SSE stream for this server
-      if (!this.sseStreams.has(slug)) {
-        this.sseStreams.set(slug, new Subject<MessageEvent>());
-      }
-
-      const stream = this.sseStreams.get(slug)!;
-
-      // Return an Observable that sends a connection event immediately
-      return new Observable<MessageEvent>((observer) => {
-        // Send MCP endpoint message (required for SSE transport)
-        observer.next({
-          data: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'endpoint',
-            params: {
-              endpoint: `http://localhost:3001/mcp/${slug}`
-            }
-          }),
-        } as MessageEvent);
-
-        // Subscribe to the main stream for actual messages
-        const subscription = stream.subscribe({
-          next: (event) => observer.next(event),
-          error: (err) => observer.error(err),
-          complete: () => observer.complete(),
-        });
-
-        // Send keep-alive comments every 15 seconds to keep connection open
-        const keepAliveInterval = setInterval(() => {
-          observer.next({
-            data: '',  // Empty data for keep-alive
-            type: 'ping',
-          } as MessageEvent);
-        }, 15000);
-
-        // Cleanup on unsubscribe
-        return () => {
-          subscription.unsubscribe();
-          clearInterval(keepAliveInterval);
-        };
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorSubject = new Subject<MessageEvent>();
-      errorSubject.next({
-        data: JSON.stringify({ error: errorMessage }),
-      } as MessageEvent);
-      errorSubject.complete();
-      return errorSubject.asObservable();
-    }
-  }
-
-  /**
-   * Handles incoming MCP (Model Context Protocol) JSON-RPC requests for a specific server.
-   * Processes the request through the MCP SDK server and sends response via SSE if streaming is active.
+   * Handles incoming MCP (Model Context Protocol) JSON-RPC requests using Streamable HTTP transport.
+   * Supports both single requests and batch requests.
    *
    * @param slug - The unique slug identifying the MCP server to handle the request
    * @param req - The Express request object containing the JSON-RPC request body
@@ -239,66 +167,103 @@ export class MCPProtocolController {
         });
       }
 
-      // Process the JSON-RPC request manually
+      // Generate or retrieve session ID
+      let sessionId = req.headers['mcp-session-id'] as string;
+      if (!sessionId) {
+        sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        this.sessions.set(sessionId, slug);
+      }
+
+      // Process the JSON-RPC request
       const jsonrpcRequest = req.body as any;
-      let response: any;
+      const response = await this.processRequest(jsonrpcRequest, mcpServer, slug);
 
-      // Route the request based on method
-      if (jsonrpcRequest.method === 'tools/list') {
-        const toolsResult = await this.mcpRuntimeService.handleToolsList(slug);
-        response = {
-          jsonrpc: '2.0',
-          id: jsonrpcRequest.id,
-          result: toolsResult,
-        };
-      } else if (jsonrpcRequest.method === 'tools/call') {
-        const toolsResult = await this.mcpRuntimeService.handleToolsCall(slug, jsonrpcRequest.params);
-        response = {
-          jsonrpc: '2.0',
-          id: jsonrpcRequest.id,
-          result: toolsResult,
-        };
-      } else {
-        response = {
-          jsonrpc: '2.0',
-          id: jsonrpcRequest.id,
-          error: {
-            code: -32601,
-            message: `Method not found: ${jsonrpcRequest.method}`,
-          },
-        };
+      // For notifications (no response needed), return 202 Accepted
+      if (response === null) {
+        res.setHeader('Mcp-Session-Id', sessionId);
+        return res.status(202).send();
       }
 
-      // If SSE stream exists, also send via SSE for streaming clients
-      const sseStream = this.sseStreams.get(slug);
-      if (sseStream) {
-        sseStream.next({
-          data: JSON.stringify(response),
-        } as MessageEvent);
-      }
-
-      // Always return HTTP response for non-streaming clients
+      // Return JSON response with session header
+      res.setHeader('Mcp-Session-Id', sessionId);
       return res.json(response);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorResponse = {
+      return res.status(500).json({
         jsonrpc: '2.0',
         id: req.body?.id || null,
         error: {
           code: -32603,
           message: errorMessage,
         },
-      };
-
-      // Send error via SSE if stream exists
-      const sseStream = this.sseStreams.get(slug);
-      if (sseStream) {
-        sseStream.next({
-          data: JSON.stringify(errorResponse),
-        } as MessageEvent);
-      }
-
-      return res.status(500).json(errorResponse);
+      });
     }
+  }
+
+  /**
+   * Processes a single JSON-RPC request and returns the response.
+   */
+  private async processRequest(
+    jsonrpcRequest: any,
+    mcpServer: MCPServer,
+    slug: string,
+  ): Promise<any> {
+    const method = jsonrpcRequest.method;
+
+    // Handle initialize
+    if (method === 'initialize') {
+      return {
+        jsonrpc: '2.0',
+        id: jsonrpcRequest.id,
+        result: {
+          protocolVersion: '2024-11-05',
+          capabilities: {
+            tools: {},
+          },
+          serverInfo: {
+            name: mcpServer.name,
+            version: '1.0.0',
+          },
+        },
+      };
+    }
+
+    // Handle notifications (no response)
+    if (method === 'notifications/initialized' || method.startsWith('notifications/')) {
+      return null;
+    }
+
+    // Handle tools/list
+    if (method === 'tools/list') {
+      const toolsResult = await this.mcpRuntimeService.handleToolsList(slug);
+      return {
+        jsonrpc: '2.0',
+        id: jsonrpcRequest.id,
+        result: toolsResult,
+      };
+    }
+
+    // Handle tools/call
+    if (method === 'tools/call') {
+      const toolsResult = await this.mcpRuntimeService.handleToolsCall(
+        slug,
+        jsonrpcRequest.params,
+      );
+      return {
+        jsonrpc: '2.0',
+        id: jsonrpcRequest.id,
+        result: toolsResult,
+      };
+    }
+
+    // Unknown method
+    return {
+      jsonrpc: '2.0',
+      id: jsonrpcRequest.id,
+      error: {
+        code: -32601,
+        message: `Method not found: ${method}`,
+      },
+    };
   }
 }
