@@ -61,3 +61,7 @@ shared/src/**/*.d.ts.map
 # OS files
 .DS_Store
 Thumbs.db
+
+# Uploaded files storage (keep .gitkeep)
+backend/public/storage/*
+!backend/public/storage/.gitkeep

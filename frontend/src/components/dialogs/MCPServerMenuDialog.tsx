@@ -7,9 +7,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, FilePlus } from 'lucide-react';
 import { ToolDialog } from './ToolDialog';
-import { Tool } from 'shared';
+import { AddResourceDialog } from './AddResourceDialog';
+import { Tool, Resource } from 'shared';
 
 interface MCPServerMenuDialogProps {
   /** Controls the visibility of the dialog */
@@ -22,6 +23,8 @@ interface MCPServerMenuDialogProps {
   mcpServerName: string;
   /** Optional callback when tool is created */
   onToolCreated?: (tool: Tool) => void;
+  /** Optional callback when resource is created */
+  onResourceCreated?: (resource: Resource) => void;
 }
 
 /**
@@ -29,6 +32,7 @@ interface MCPServerMenuDialogProps {
  *
  * Features:
  * - "Create Tool" button opens ToolDialog
+ * - "Add Resource" button opens AddResourceDialog
  * - Manages child dialog states
  */
 export function MCPServerMenuDialog({
@@ -37,16 +41,27 @@ export function MCPServerMenuDialog({
   mcpServerId,
   mcpServerName,
   onToolCreated,
+  onResourceCreated,
 }: MCPServerMenuDialogProps) {
   const [toolDialogOpen, setToolDialogOpen] = useState(false);
+  const [resourceDialogOpen, setResourceDialogOpen] = useState(false);
 
   const handleCreateTool = () => {
     setToolDialogOpen(true);
   };
 
+  const handleAddResource = () => {
+    setResourceDialogOpen(true);
+  };
+
   const handleToolCreated = (tool: Tool) => {
     setToolDialogOpen(false);
     onToolCreated?.(tool);
+  };
+
+  const handleResourceCreated = (resource: Resource) => {
+    setResourceDialogOpen(false);
+    onResourceCreated?.(resource);
   };
 
   return (
@@ -79,6 +94,25 @@ export function MCPServerMenuDialog({
                 </div>
               </div>
             </Button>
+
+            {/* Add Resource Button */}
+            <Button
+              onClick={handleAddResource}
+              className="h-auto flex-col items-start gap-2 p-4"
+              variant="outline"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+                  <FilePlus className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div className="text-left">
+                  <div className="font-semibold">Add Resource</div>
+                  <div className="text-xs text-muted-foreground font-normal">
+                    Upload files to make available via MCP protocol
+                  </div>
+                </div>
+              </div>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -90,6 +124,14 @@ export function MCPServerMenuDialog({
         mode="create"
         mcpServerId={mcpServerId}
         onSuccess={handleToolCreated}
+      />
+
+      <AddResourceDialog
+        open={resourceDialogOpen}
+        onOpenChange={setResourceDialogOpen}
+        mcpServerId={mcpServerId}
+        mcpServerName={mcpServerName}
+        onSuccess={handleResourceCreated}
       />
     </>
   );

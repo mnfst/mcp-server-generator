@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreateToolDto, Tool, ToolTestResult, DatabaseSchema } from "shared";
+import { CreateToolDto, Tool, ToolTestResult, DatabaseSchema, Resource } from "shared";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -174,6 +174,66 @@ export function useTools(mcpServerId?: string) {
     queryFn: async () => {
       const params = mcpServerId ? { mcpServerId } : {};
       const response = await apiClient.get<Tool[]>("/api/tools", { params });
+      return response.data;
+    },
+  });
+}
+
+// ==================== Resource Mutation Hooks ====================
+
+/**
+ * Hook to create a new resource with file upload.
+ * POST /api/resources (multipart/form-data)
+ */
+export function useCreateResource() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await apiClient.post<Resource>("/api/resources", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      queryClient.invalidateQueries({ queryKey: ["canvas"] });
+    },
+  });
+}
+
+/**
+ * Hook to delete a resource.
+ * DELETE /api/resources/:id
+ */
+export function useDeleteResource() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/api/resources/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
+      queryClient.invalidateQueries({ queryKey: ["canvas"] });
+    },
+  });
+}
+
+// ==================== Resource Query Hooks ====================
+
+/**
+ * Hook to fetch resources, optionally filtered by MCP server ID.
+ * GET /api/resources?mcpServerId=...
+ */
+export function useResources(mcpServerId?: string) {
+  return useQuery({
+    queryKey: ["resources", mcpServerId],
+    queryFn: async () => {
+      const params = mcpServerId ? { mcpServerId } : {};
+      const response = await apiClient.get<Resource[]>("/api/resources", { params });
       return response.data;
     },
   });

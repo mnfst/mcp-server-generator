@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Datasource } from '../../datasources/entities/datasource.entity';
 import { MCPServer } from '../../mcp-servers/entities/mcp-server.entity';
+import { Resource } from '../../resources/entities/resource.entity';
 import * as shared from 'shared';
 
 const CanvasNodeType = shared.CanvasNodeType;
@@ -16,7 +17,7 @@ type CanvasNodeType = shared.CanvasNodeType;
 
 /**
  * CanvasNode entity representing a visual node on the workflow canvas.
- * Nodes can represent datasources, MCP servers, tools, or add buttons.
+ * Nodes can represent datasources, MCP servers, tools, resources, or add buttons.
  */
 @Entity('canvas_nodes')
 export class CanvasNode {
@@ -64,6 +65,15 @@ export class CanvasNode {
   /** Foreign key to tool (when type is TOOL) */
   @Column({ type: 'varchar', nullable: true })
   toolId!: string | null;
+
+  /** Foreign key to resource (when type is RESOURCE) */
+  @Column({ type: 'varchar', nullable: true })
+  resourceId!: string | null;
+
+  /** Related resource entity */
+  @ManyToOne(() => Resource, { nullable: true })
+  @JoinColumn({ name: 'resourceId' })
+  resource!: Resource | null;
 
   /** Timestamp when the node was created */
   @CreateDateColumn()

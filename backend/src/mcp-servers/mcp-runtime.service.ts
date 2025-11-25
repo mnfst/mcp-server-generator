@@ -1,11 +1,17 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ToolsService } from '../tools/tools.service';
+import { ResourcesService } from '../resources/resources.service';
+import { Resource } from '../resources/entities/resource.entity';
 import { Tool, ToolParameter } from 'shared';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 
 /**
  * Service responsible for managing MCP server runtime instances.
@@ -25,6 +31,8 @@ export class MCPRuntimeService {
   constructor(
     @Inject(forwardRef(() => ToolsService))
     private readonly toolsService: ToolsService,
+    @Inject(forwardRef(() => ResourcesService))
+    private readonly resourcesService: ResourcesService,
   ) {}
 
   /**
@@ -48,7 +56,7 @@ export class MCPRuntimeService {
     config: { name: string; version: string },
   ): Promise<void> {
     try {
-      // Create new MCP server instance
+      // Create new MCP server instance with tools and resources capabilities
       const server = new Server(
         {
           name: config.name,
@@ -57,6 +65,7 @@ export class MCPRuntimeService {
         {
           capabilities: {
             tools: {},
+            resources: {},
           },
         },
       );
@@ -65,6 +74,12 @@ export class MCPRuntimeService {
       const tools = await this.toolsService.findAll(mcpServerId);
       this.logger.log(
         `Loaded ${tools.length} tools for MCP server ${slug} (ID: ${mcpServerId})`,
+      );
+
+      // Fetch all resources for this MCP server
+      const resources = await this.resourcesService.findAll(mcpServerId);
+      this.logger.log(
+        `Loaded ${resources.length} resources for MCP server ${slug} (ID: ${mcpServerId})`,
       );
 
       // Register tools/list handler
@@ -119,9 +134,67 @@ export class MCPRuntimeService {
         };
       });
 
-      // Store server instance along with tools array for request handling
-      this.servers.set(slug, { server, tools });
-      this.logger.log(`MCP server started for slug: ${slug} with ${tools.length} tools`);
+      // Register resources/list handler
+      server.setRequestHandler(ListResourcesRequestSchema, async () => {
+        return {
+          resources: resources.map((resource) => this.convertResourceToMCPFormat(resource)),
+        };
+      });
+
+      // Register resources/read handler
+      server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+        const uri = request.params.uri;
+
+        // Parse resource ID from URI (format: resource://{id})
+        const match = uri.match(/^resource:\/\/(.+)$/);
+        if (!match) {
+          throw new Error(`Invalid resource URI format: ${uri}`);
+        }
+        const resourceId = match[1];
+
+        // Find the resource
+        const resource = resources.find((r) => r.id === resourceId);
+        if (!resource) {
+          throw new Error(`Resource not found: ${uri}`);
+        }
+
+        // Read the file content
+        const filePath = join(process.cwd(), 'public', resource.filePath);
+        const fileContent = await readFile(filePath);
+
+        // Determine if content should be text or blob based on MIME type
+        const isTextMimeType = resource.mimeType.startsWith('text/') ||
+          resource.mimeType === 'application/json' ||
+          resource.mimeType === 'application/xml' ||
+          resource.mimeType === 'application/javascript';
+
+        if (isTextMimeType) {
+          return {
+            contents: [
+              {
+                uri,
+                mimeType: resource.mimeType,
+                text: fileContent.toString('utf-8'),
+              },
+            ],
+          };
+        } else {
+          // Return as base64-encoded blob
+          return {
+            contents: [
+              {
+                uri,
+                mimeType: resource.mimeType,
+                blob: fileContent.toString('base64'),
+              },
+            ],
+          };
+        }
+      });
+
+      // Store server instance along with tools and resources arrays for request handling
+      this.servers.set(slug, { server, tools, resources, mcpServerId });
+      this.logger.log(`MCP server started for slug: ${slug} with ${tools.length} tools and ${resources.length} resources`);
     } catch (error) {
       this.logger.error(`Failed to start MCP server for slug ${slug}:`, error);
       throw error;
@@ -189,6 +262,21 @@ export class MCPRuntimeService {
     }
 
     return schema;
+  }
+
+  /**
+   * Converts a Resource entity to MCP SDK resource format.
+   *
+   * @param resource - Resource entity to convert
+   * @returns MCP resource object with uri, name, description, and mimeType
+   */
+  private convertResourceToMCPFormat(resource: Resource) {
+    return {
+      uri: `resource://${resource.id}`,
+      name: resource.name,
+      description: resource.description,
+      mimeType: resource.mimeType,
+    };
   }
 
   /**
@@ -318,5 +406,84 @@ export class MCPRuntimeService {
         },
       ],
     };
+  }
+
+  /**
+   * Handles resources/list JSON-RPC requests by returning all available resources for a server.
+   *
+   * @param slug - Unique slug of the server
+   * @returns Resources list result in MCP format
+   */
+  async handleResourcesList(slug: string): Promise<any> {
+    const serverData = this.servers.get(slug);
+    if (!serverData) {
+      throw new Error('Server not found');
+    }
+
+    // Fetch fresh resources from the database to get any newly added resources
+    const resources = await this.resourcesService.findAll(serverData.mcpServerId);
+
+    return {
+      resources: resources.map((resource: Resource) => this.convertResourceToMCPFormat(resource)),
+    };
+  }
+
+  /**
+   * Handles resources/read JSON-RPC requests by reading and returning resource content.
+   *
+   * @param slug - Unique slug of the server
+   * @param params - Resource read parameters including uri
+   * @returns Resource content in MCP format (text or base64 blob)
+   */
+  async handleResourcesRead(slug: string, params: { uri: string }): Promise<any> {
+    const serverData = this.servers.get(slug);
+    if (!serverData) {
+      throw new Error('Server not found');
+    }
+
+    const uri = params.uri;
+
+    // Parse resource ID from URI (format: resource://{id})
+    const match = uri.match(/^resource:\/\/(.+)$/);
+    if (!match) {
+      throw new Error(`Invalid resource URI format: ${uri}`);
+    }
+    const resourceId = match[1];
+
+    // Find the resource in the database
+    const resource = await this.resourcesService.findOne(resourceId);
+
+    // Read the file content
+    const filePath = join(process.cwd(), 'public', resource.filePath);
+    const fileContent = await readFile(filePath);
+
+    // Determine if content should be text or blob based on MIME type
+    const isTextMimeType = resource.mimeType.startsWith('text/') ||
+      resource.mimeType === 'application/json' ||
+      resource.mimeType === 'application/xml' ||
+      resource.mimeType === 'application/javascript';
+
+    if (isTextMimeType) {
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: resource.mimeType,
+            text: fileContent.toString('utf-8'),
+          },
+        ],
+      };
+    } else {
+      // Return as base64-encoded blob
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: resource.mimeType,
+            blob: fileContent.toString('base64'),
+          },
+        ],
+      };
+    }
   }
 }

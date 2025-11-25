@@ -7,6 +7,7 @@ import { MCPServer } from './entities/mcp-server.entity';
 import { DatasourcesModule } from '../datasources/datasources.module';
 import { CanvasModule } from '../canvas/canvas.module';
 import { ToolsModule } from '../tools/tools.module';
+import { ResourcesModule } from '../resources/resources.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ToolsModule } from '../tools/tools.module';
     DatasourcesModule,
     CanvasModule,
     forwardRef(() => ToolsModule),
+    forwardRef(() => ResourcesModule),
   ],
   controllers: [MCPServersController, MCPProtocolController],
   providers: [MCPServersService, MCPRuntimeService],

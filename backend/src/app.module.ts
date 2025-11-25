@@ -8,6 +8,7 @@ import { CanvasModule } from './canvas/canvas.module'
 import { ToolsModule } from './tools/tools.module'
 import { SchemaModule } from './schema/schema.module'
 import { QueryGenerationModule } from './query-generation/query-generation.module'
+import { ResourcesModule } from './resources/resources.module'
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { QueryGenerationModule } from './query-generation/query-generation.modul
     CanvasModule,
     ToolsModule,
     SchemaModule,
-    QueryGenerationModule
+    QueryGenerationModule,
+    ResourcesModule
   ]
 })
 export class AppModule {}

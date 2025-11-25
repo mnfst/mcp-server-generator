@@ -4,6 +4,7 @@
  * - DATASOURCE: A database connection node
  * - MCP_SERVER: An MCP server instance node
  * - TOOL: A tool or function node
+ * - RESOURCE: A file resource node attached to an MCP server
  * - ADD: A button node for adding new elements
  */
 export enum CanvasNodeType {
@@ -21,6 +22,11 @@ export enum CanvasNodeType {
    * A tool or function node.
    */
   TOOL = 'tool',
+
+  /**
+   * A file resource node attached to an MCP server.
+   */
+  RESOURCE = 'resource',
 
   /**
    * A button node for adding new elements.

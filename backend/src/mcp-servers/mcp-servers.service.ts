@@ -4,6 +4,8 @@ import {
   BadRequestException,
   OnModuleInit,
   Logger,
+  Inject,
+  forwardRef,
 } from "@nestjs/common";
 import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
@@ -15,6 +17,7 @@ import { DatasourcesService } from "../datasources/datasources.service";
 import { MCPRuntimeService } from "./mcp-runtime.service";
 import { CanvasService } from "../canvas/canvas.service";
 import { CanvasNode } from "../canvas/entities/canvas-node.entity";
+import { ResourcesService } from "../resources/resources.service";
 
 @Injectable()
 export class MCPServersService implements OnModuleInit {
@@ -26,6 +29,7 @@ export class MCPServersService implements OnModuleInit {
    * @param datasourcesService - The service for datasource operations and validation
    * @param mcpRuntimeService - The service for managing MCP server runtime lifecycle
    * @param canvasService - The service for managing canvas nodes
+   * @param resourcesService - The service for managing resources (used for cascade delete)
    */
   constructor(
     @InjectRepository(MCPServer)
@@ -34,7 +38,9 @@ export class MCPServersService implements OnModuleInit {
     private dataSource: DataSource,
     private datasourcesService: DatasourcesService,
     private mcpRuntimeService: MCPRuntimeService,
-    private canvasService: CanvasService
+    private canvasService: CanvasService,
+    @Inject(forwardRef(() => ResourcesService))
+    private resourcesService: ResourcesService
   ) {}
 
   /**
@@ -187,6 +193,7 @@ export class MCPServersService implements OnModuleInit {
   /**
    * Deletes an MCP server from the system.
    * If the server is currently active, it will be stopped before deletion.
+   * Also cascades deletion to all associated resources.
    *
    * @param id - The unique identifier of the MCP server to delete
    * @returns A promise that resolves when the MCP server is successfully deleted
@@ -214,6 +221,12 @@ export class MCPServersService implements OnModuleInit {
     // Stop the server if it's running
     if (mcpServer.status === MCPServerStatus.ACTIVE) {
       await this.mcpRuntimeService.stopServer(mcpServer.slug);
+    }
+
+    // Cascade delete all resources associated with this MCP server
+    const resources = await this.resourcesService.findByMcpServerId(id);
+    for (const resource of resources) {
+      await this.resourcesService.delete(resource.id);
     }
 
     // Delete associated canvas node first (foreign key constraint)
@@ -256,5 +269,24 @@ export class MCPServersService implements OnModuleInit {
       await this.mcpServerRepository.save(mcpServer);
       throw new BadRequestException("Failed to activate MCP server");
     }
+  }
+
+  /**
+   * Deactivates an MCP server, stopping its runtime and resetting its status to draft.
+   *
+   * @param id - The unique identifier of the MCP server to deactivate
+   * @returns A promise that resolves to the updated MCPServer entity with draft status
+   * @throws {NotFoundException} When no MCP server exists with the provided ID
+   */
+  async deactivate(id: string): Promise<MCPServer> {
+    const mcpServer = await this.findOne(id);
+
+    // Stop the server if it's running
+    if (mcpServer.status === MCPServerStatus.ACTIVE) {
+      await this.mcpRuntimeService.stopServer(mcpServer.slug);
+    }
+
+    mcpServer.status = MCPServerStatus.DRAFT;
+    return this.mcpServerRepository.save(mcpServer);
   }
 }

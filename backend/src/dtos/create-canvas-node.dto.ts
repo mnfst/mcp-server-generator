@@ -46,6 +46,7 @@ export class CreateCanvasNodeDto {
    * - DATASOURCE: A database connection node
    * - MCP_SERVER: An MCP server instance node
    * - TOOL: A tool or function node
+   * - RESOURCE: A file resource node
    * - ADD: A button node for adding new elements
    *
    * @example CanvasNodeType.DATASOURCE | CanvasNodeType.MCP_SERVER
@@ -103,4 +104,15 @@ export class CreateCanvasNodeDto {
   @IsOptional()
   @IsUUID()
   toolId?: string;
+
+  /**
+   * Reference to a resource entity.
+   * Required when type is 'resource', otherwise should be undefined.
+   *
+   * @optional
+   * @example 'def12345-e89b-12d3-a456-426614174000'
+   */
+  @IsOptional()
+  @IsUUID()
+  resourceId?: string;
 }

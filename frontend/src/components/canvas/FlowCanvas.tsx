@@ -18,6 +18,7 @@ import { AddMCPServerNode } from "./AddMCPServerNode";
 import { DatasourceNode } from "./DatasourceNode";
 import { MCPServerNode } from "./MCPServerNode";
 import { ToolNode } from "./ToolNode";
+import { ResourceNode } from "./ResourceNode";
 import { MCPServerMenuDialog } from "../dialogs/MCPServerMenuDialog";
 import { CreateMCPServerDialog } from "../dialogs/CreateMCPServerDialog";
 import { CreateDatasourceDialog } from "../dialogs/CreateDatasourceDialog";
@@ -31,15 +32,16 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { apiUrl } from "@/lib/api";
-import { CanvasNodeType, Datasource, MCPServer, Tool } from "shared";
+import { CanvasNodeType, Datasource, MCPServer, Tool, Resource } from "shared";
 import { ChevronDown, Database, Server } from "lucide-react";
 
 // Custom node types mapping
 const nodeTypes = {
-  [CanvasNodeType.ADD]: AddNode,
-  [CanvasNodeType.DATASOURCE]: DatasourceNode,
-  [CanvasNodeType.MCP_SERVER]: MCPServerNode,
-  [CanvasNodeType.TOOL]: ToolNode,
+  add: AddNode,
+  datasource: DatasourceNode,
+  mcpServer: MCPServerNode,
+  tool: ToolNode,
+  resource: ResourceNode,
   addMcpServer: AddMCPServerNode,
 };
 
@@ -99,11 +101,13 @@ export function FlowCanvas({
           datasourcesResponse,
           mcpServersResponse,
           toolsResponse,
+          resourcesResponse,
         ] = await Promise.all([
           fetch(apiUrl("/api/canvas/nodes")),
           fetch(apiUrl("/api/datasources")),
           fetch(apiUrl("/api/mcp-servers")),
           fetch(apiUrl("/api/tools")),
+          fetch(apiUrl("/api/resources")),
         ]);
 
         if (!canvasResponse.ok) throw new Error("Failed to fetch canvas nodes");
@@ -118,11 +122,15 @@ export function FlowCanvas({
         const tools: Tool[] = toolsResponse.ok
           ? await toolsResponse.json()
           : [];
+        const resources: Resource[] = resourcesResponse.ok
+          ? await resourcesResponse.json()
+          : [];
 
         // Create lookup maps
         const datasourceMap = new Map(datasources.map((ds) => [ds.id, ds]));
         const mcpServerMap = new Map(mcpServers.map((mcp) => [mcp.id, mcp]));
         const toolMap = new Map(tools.map((tool) => [tool.id, tool]));
+        const resourceMap = new Map(resources.map((res) => [res.id, res]));
 
         // Convert backend canvas nodes to React Flow nodes
         const flowNodes: Node[] = canvasNodes.map((node: any) => {
@@ -156,7 +164,10 @@ export function FlowCanvas({
             const mcpServerTools = tools.filter(
               (tool) => tool.mcpServerId === node.mcpServerId
             );
-            const hasChildren = mcpServerTools.length > 0;
+            const mcpServerResources = resources.filter(
+              (res) => res.mcpServerId === node.mcpServerId
+            );
+            const hasChildren = mcpServerTools.length > 0 || mcpServerResources.length > 0;
             return {
               ...baseNode,
               data: {
@@ -165,8 +176,21 @@ export function FlowCanvas({
                 onEdit: () => handleMCPServerEdit(mcpServer!),
                 onDelete: () => handleMCPServerDelete(node.mcpServerId),
                 onActivate: () => handleMCPServerActivate(node.mcpServerId),
+                onDeactivate: () => handleMCPServerDeactivate(node.mcpServerId),
                 hasChildren,
                 toolCount: mcpServerTools.length,
+                resourceCount: mcpServerResources.length,
+                onResourceCreated: handleResourceCreated,
+              },
+            };
+          } else if (node.type === "resource" && node.resourceId) {
+            const resource = resourceMap.get(node.resourceId);
+            return {
+              ...baseNode,
+              data: {
+                resource,
+                onClick: () => handleResourceClick(resource!),
+                onDelete: () => handleResourceDelete(node.resourceId),
               },
             };
           } else if (node.type === "tool" && node.toolId) {
@@ -217,6 +241,23 @@ export function FlowCanvas({
               id: `edge-${mcpServerNodeId}-${toolNodeId}`,
               source: mcpServerNodeId,
               target: toolNodeId,
+              animated: true,
+            });
+          }
+        });
+
+        // MCP Server -> Resource edges
+        resources.forEach((resource) => {
+          const mcpServerNodeId = `mcpServer-${resource.mcpServerId}`;
+          const resourceNodeId = `resource-${resource.id}`;
+          if (
+            flowNodes.some((n) => n.id === mcpServerNodeId) &&
+            flowNodes.some((n) => n.id === resourceNodeId)
+          ) {
+            flowEdges.push({
+              id: `edge-${mcpServerNodeId}-${resourceNodeId}`,
+              source: mcpServerNodeId,
+              target: resourceNodeId,
               animated: true,
             });
           }
@@ -312,6 +353,46 @@ export function FlowCanvas({
   };
 
   /**
+   * Handle Resource node click - currently just logs, could open details dialog later
+   */
+  const handleResourceClick = (resource: Resource) => {
+    console.log("Resource clicked:", resource.name);
+    // Could open a resource details dialog in the future
+  };
+
+  /**
+   * Handle Resource deletion from canvas with confirmation
+   */
+  const handleResourceDelete = async (resourceId: string) => {
+    // Show confirmation dialog
+    if (!window.confirm("Are you sure you want to delete this resource? The file will be permanently removed.")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(apiUrl(`/api/resources/${resourceId}`), {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete resource");
+      }
+
+      const resourceNodeId = `resource-${resourceId}`;
+
+      // Remove node
+      setNodes((nds) => nds.filter((n) => n.id !== resourceNodeId));
+
+      // Remove edges
+      setEdges((eds) =>
+        eds.filter((e) => e.source !== resourceNodeId && e.target !== resourceNodeId)
+      );
+    } catch (error) {
+      console.error("Failed to delete resource:", error);
+    }
+  };
+
+  /**
    * Handle Add MCP Server node click - opens create dialog with datasource preselected
    */
   const handleAddMCPServerClick = (datasourceId: string) => {
@@ -403,6 +484,44 @@ export function FlowCanvas({
     } catch (error) {
       console.error("Failed to activate MCP server:", error);
       alert("Failed to activate MCP server. Please try again.");
+    }
+  };
+
+  /**
+   * Handle MCP server deactivation
+   */
+  const handleMCPServerDeactivate = async (mcpServerId: string) => {
+    try {
+      const response = await fetch(apiUrl(`/api/mcp-servers/${mcpServerId}/deactivate`), {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to deactivate MCP server");
+      }
+
+      const updatedServer: MCPServer = await response.json();
+
+      // Update the node data to reflect the new status
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === `mcpServer-${mcpServerId}` && node.data.mcpServer) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                mcpServer: updatedServer,
+              },
+            };
+          }
+          return node;
+        })
+      );
+
+      console.log("MCP server deactivated successfully");
+    } catch (error) {
+      console.error("Failed to deactivate MCP server:", error);
+      alert("Failed to deactivate MCP server. Please try again.");
     }
   };
 
@@ -543,6 +662,63 @@ export function FlowCanvas({
       setEdges((eds) => [...eds, newEdge]);
     } catch (error) {
       console.error("Failed to create tool canvas node:", error);
+    }
+  };
+
+  /**
+   * Handle resource creation - create canvas node and edge
+   * Note: The backend already creates the canvas node when a resource is created,
+   * so we just need to add the node and edge to the UI state
+   */
+  const handleResourceCreated = async (resource: Resource) => {
+    try {
+      const resourceNodeId = `resource-${resource.id}`;
+      const mcpServerNodeId = `mcpServer-${resource.mcpServerId}`;
+
+      // Find MCP server node to position resource near it
+      const mcpServerNode = nodes.find((n) => n.id === mcpServerNodeId);
+      const existingResourceNodes = nodes.filter((n) => n.id.startsWith('resource-') && n.id !== resourceNodeId);
+      const yOffset = existingResourceNodes.length * 120; // Stack resources vertically
+      const position = mcpServerNode
+        ? { x: mcpServerNode.position.x + 300, y: mcpServerNode.position.y + yOffset }
+        : { x: 500, y: 100 };
+
+      // Add resource node to canvas
+      const newNode: Node = {
+        id: resourceNodeId,
+        type: "resource",
+        position,
+        draggable: true,
+        data: {
+          resource,
+          onClick: () => handleResourceClick(resource),
+          onDelete: () => handleResourceDelete(resource.id),
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+
+      // Add edge from MCP server to resource
+      const newEdge: Edge = {
+        id: `edge-${mcpServerNodeId}-${resourceNodeId}`,
+        source: mcpServerNodeId,
+        target: resourceNodeId,
+        animated: true,
+      };
+
+      setEdges((eds) => [...eds, newEdge]);
+
+      // Update canvas node position in backend (the backend already created the node, we just update position)
+      await fetch(apiUrl(`/api/canvas/nodes/${resourceNodeId}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          positionX: position.x,
+          positionY: position.y,
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to add resource to canvas:", error);
     }
   };
 
@@ -692,6 +868,7 @@ export function FlowCanvas({
           mcpServerId={selectedMCPServer.mcpServer.id}
           mcpServerName={selectedMCPServer.mcpServer.name}
           onToolCreated={handleToolCreated}
+          onResourceCreated={handleResourceCreated}
         />
       )}
 

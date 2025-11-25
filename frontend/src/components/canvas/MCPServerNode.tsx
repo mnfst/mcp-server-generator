@@ -1,13 +1,14 @@
 import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable, Play, Wrench, FolderOpen, MessageSquare } from 'lucide-react';
+import { CheckCircle2, FileEdit, AlertCircle, MoreVertical, Edit, Trash2, Cable, Play, Square, Wrench, FolderOpen, MessageSquare, FilePlus } from 'lucide-react';
 import { MCPIcon } from '../icons/MCPIcon';
-import { MCPServer, MCPServerStatus } from 'shared';
+import { MCPServer, MCPServerStatus, Resource } from 'shared';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -17,6 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { MCPConnectionDialog } from '../dialogs/MCPConnectionDialog';
+import { AddResourceDialog } from '../dialogs/AddResourceDialog';
 import './MCPServerNode.css';
 
 /**
@@ -33,10 +35,16 @@ interface MCPServerNodeData {
   onDelete?: () => void;
   /** Optional callback function triggered when activate is clicked */
   onActivate?: () => void;
+  /** Optional callback function triggered when deactivate is clicked */
+  onDeactivate?: () => void;
   /** Whether this node has children (disables delete) */
   hasChildren?: boolean;
   /** Number of tools associated with this MCP server */
   toolCount?: number;
+  /** Number of resources associated with this MCP server */
+  resourceCount?: number;
+  /** Optional callback function triggered when a resource is created */
+  onResourceCreated?: (resource: Resource) => void;
 }
 
 /**
@@ -58,8 +66,9 @@ interface MCPServerNodeData {
  * @returns A styled MCP server node with connection handles
  */
 export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
-  const { mcpServer, onEdit, onDelete, onActivate, hasChildren, toolCount = 0 } = data;
+  const { mcpServer, onEdit, onDelete, onActivate, onDeactivate, hasChildren, toolCount = 0, resourceCount = 0, onResourceCreated } = data;
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
+  const [addResourceDialogOpen, setAddResourceDialogOpen] = useState(false);
 
   /**
    * Returns the appropriate status icon based on MCP server activation status.
@@ -170,6 +179,19 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
                       Activate Server
                     </DropdownMenuItem>
                   )}
+                  {mcpServer.status === MCPServerStatus.ACTIVE && (
+                    <>
+                      <DropdownMenuItem onClick={onDeactivate} className="text-amber-600 focus:text-amber-600">
+                        <Square className="mr-2 h-4 w-4" />
+                        Deactivate Server
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setAddResourceDialogOpen(true)}>
+                        <FilePlus className="mr-2 h-4 w-4" />
+                        Add Resource
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onEdit}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
@@ -221,13 +243,13 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
                       <TooltipProvider delayDuration={100}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1 opacity-50 cursor-default">
+                            <div className={`flex items-center gap-1 cursor-default ${resourceCount === 0 ? 'opacity-50' : ''}`}>
                               <FolderOpen className="w-3.5 h-3.5 text-orange-500" />
-                              <span>0</span>
+                              <span className={resourceCount > 0 ? 'text-foreground font-medium' : ''}>{resourceCount}</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>0 resources (coming soon)</p>
+                            <p>{resourceCount} resource{resourceCount !== 1 ? 's' : ''}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -271,6 +293,15 @@ export const MCPServerNode = memo(({ data }: NodeProps<MCPServerNodeData>) => {
         open={connectionDialogOpen}
         onOpenChange={setConnectionDialogOpen}
         mcpServer={mcpServer}
+      />
+
+      {/* Add Resource Dialog */}
+      <AddResourceDialog
+        open={addResourceDialogOpen}
+        onOpenChange={setAddResourceDialogOpen}
+        mcpServerId={mcpServer.id}
+        mcpServerName={mcpServer.name}
+        onSuccess={onResourceCreated}
       />
 
       {/* Output handle for connections to tool nodes (future) */}

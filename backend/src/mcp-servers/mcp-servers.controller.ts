@@ -106,6 +106,18 @@ export class MCPServersController {
   activate(@Param('id') id: string) {
     return this.mcpServersService.activate(id);
   }
+
+  /**
+   * Deactivates an MCP server, stopping its runtime and resetting its status to draft.
+   *
+   * @param id - The unique identifier of the MCP server to deactivate
+   * @returns A promise that resolves to the updated MCPServer entity with draft status
+   * @throws {NotFoundException} When no MCP server exists with the provided ID
+   */
+  @Post(':id/deactivate')
+  deactivate(@Param('id') id: string) {
+    return this.mcpServersService.deactivate(id);
+  }
 }
 
 // Separate controller for MCP protocol endpoints (Streamable HTTP transport)
@@ -219,6 +231,7 @@ export class MCPProtocolController {
           protocolVersion: '2024-11-05',
           capabilities: {
             tools: {},
+            resources: {},
           },
           serverInfo: {
             name: mcpServer.name,
@@ -253,6 +266,29 @@ export class MCPProtocolController {
         jsonrpc: '2.0',
         id: jsonrpcRequest.id,
         result: toolsResult,
+      };
+    }
+
+    // Handle resources/list
+    if (method === 'resources/list') {
+      const resourcesResult = await this.mcpRuntimeService.handleResourcesList(slug);
+      return {
+        jsonrpc: '2.0',
+        id: jsonrpcRequest.id,
+        result: resourcesResult,
+      };
+    }
+
+    // Handle resources/read
+    if (method === 'resources/read') {
+      const resourceResult = await this.mcpRuntimeService.handleResourcesRead(
+        slug,
+        jsonrpcRequest.params,
+      );
+      return {
+        jsonrpc: '2.0',
+        id: jsonrpcRequest.id,
+        result: resourceResult,
       };
     }
 
