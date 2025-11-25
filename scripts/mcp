@@ -1,0 +1,39 @@
+#!/bin/bash
+# Helper script to manage multiple MCP instances
+# Usage: ./scripts/mcp <instance_number> <docker-compose args...>
+#
+# Examples:
+#   ./scripts/mcp 1 up -d       # Start instance 1 in detached mode
+#   ./scripts/mcp 2 down        # Stop instance 2
+#   ./scripts/mcp 1 logs -f     # Follow logs for instance 1
+#   ./scripts/mcp 2 ps          # Show containers for instance 2
+
+set -e
+
+# Get project root (parent of scripts directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+if [ -z "$1" ]; then
+    echo "Usage: ./scripts/mcp <instance_number> <docker-compose args...>"
+    echo ""
+    echo "Examples:"
+    echo "  ./scripts/mcp 1 up -d       # Start instance 1"
+    echo "  ./scripts/mcp 2 down        # Stop instance 2"
+    echo "  ./scripts/mcp 1 logs -f     # Follow logs for instance 1"
+    exit 1
+fi
+
+INSTANCE=$1
+shift
+
+ENV_FILE="${PROJECT_ROOT}/.env.instance${INSTANCE}"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo "Error: .env.instance${INSTANCE} not found"
+    echo "Create it first: cp .env.instance.example .env.instance${INSTANCE}"
+    exit 1
+fi
+
+cd "$PROJECT_ROOT"
+COMPOSE_PROJECT_NAME="mcp-inst${INSTANCE}" docker compose --env-file "$ENV_FILE" "$@"

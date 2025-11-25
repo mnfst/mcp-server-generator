@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:9.3.0
-    container_name: mcp-generator-mysql
+    # container_name omitted to allow COMPOSE_PROJECT_NAME to prefix automatically
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-password}
       MYSQL_DATABASE: ${DB_DATABASE:-poc_origin}
