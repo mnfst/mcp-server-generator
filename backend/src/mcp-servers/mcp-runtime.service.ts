@@ -199,7 +199,11 @@ export class MCPRuntimeService {
   async stopServer(slug: string): Promise<void> {
     const serverData = this.servers.get(slug);
     if (serverData) {
-      await serverData.server.close();
+      try {
+        await serverData.server.close();
+      } catch (error) {
+        this.logger.warn(`Error closing server ${slug}: ${error}`);
+      }
       this.servers.delete(slug);
       this.logger.log(`MCP server stopped for slug: ${slug}`);
     }

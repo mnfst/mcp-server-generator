@@ -43,6 +43,11 @@ interface ToolNodeData {
 export const ToolNode = memo(({ data }: NodeProps<ToolNodeData>) => {
   const { tool, onClick, onEdit, onDelete, hasChildren } = data;
 
+  // Guard against deleted/missing tool
+  if (!tool) {
+    return null;
+  }
+
   const handleClick = () => {
     if (onClick) {
       onClick();

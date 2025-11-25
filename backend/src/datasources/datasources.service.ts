@@ -4,6 +4,8 @@ import { Repository, DataSource } from 'typeorm';
 import { createConnection } from 'mysql2/promise';
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 import { Datasource } from './entities/datasource.entity';
+import { MCPServer } from '../mcp-servers/entities/mcp-server.entity';
+import { CanvasNode } from '../canvas/entities/canvas-node.entity';
 import { CanvasNodeType } from 'shared';
 import { CreateDatasourceDto } from '../dtos';
 import { CanvasService } from '../canvas/canvas.service';
@@ -185,8 +187,8 @@ export class DatasourcesService {
     const mcpServerCount = await this.dataSource
       .createQueryBuilder()
       .select('COUNT(*)', 'count')
-      .from('mcp_server', 'mcp_server')
-      .where('mcp_server.datasourceId = :id', { id })
+      .from(MCPServer, 'mcpServer')
+      .where('mcpServer.datasourceId = :id', { id })
       .getRawOne()
       .then((result) => parseInt(result.count, 10));
 
@@ -195,6 +197,14 @@ export class DatasourcesService {
         `Cannot delete datasource: ${mcpServerCount} MCP server(s) are still using this datasource. Delete the MCP servers first.`,
       );
     }
+
+    // Delete associated canvas node first (foreign key constraint)
+    await this.dataSource
+      .createQueryBuilder()
+      .delete()
+      .from(CanvasNode)
+      .where("datasourceId = :id", { id })
+      .execute();
 
     const result = await this.datasourceRepository.delete(id);
     if (result.affected === 0) {

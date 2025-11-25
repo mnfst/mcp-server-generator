@@ -341,13 +341,19 @@ export function FlowCanvas({
       }
 
       const datasourceNodeId = `datasource-${datasourceId}`;
+      const addMcpNodeId = `add-mcp-${datasourceId}`;
 
-      // Remove node
-      setNodes((nds) => nds.filter((n) => n.id !== datasourceNodeId));
+      // Remove datasource node and its associated "+" node
+      setNodes((nds) => nds.filter((n) => n.id !== datasourceNodeId && n.id !== addMcpNodeId));
 
-      // Remove edges
+      // Remove edges connected to either node
       setEdges((eds) =>
-        eds.filter((e) => e.source !== datasourceNodeId && e.target !== datasourceNodeId)
+        eds.filter((e) =>
+          e.source !== datasourceNodeId &&
+          e.target !== datasourceNodeId &&
+          e.source !== addMcpNodeId &&
+          e.target !== addMcpNodeId
+        )
       );
     } catch (error) {
       console.error("Failed to delete datasource:", error);

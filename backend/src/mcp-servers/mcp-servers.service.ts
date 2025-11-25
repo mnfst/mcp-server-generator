@@ -8,11 +8,13 @@ import {
 import { InjectRepository, InjectDataSource } from "@nestjs/typeorm";
 import { Repository, DataSource } from "typeorm";
 import { MCPServer } from "./entities/mcp-server.entity";
+import { Tool } from "../tools/entities/tool.entity";
 import { MCPServerStatus, CanvasNodeType } from "shared";
 import { CreateMCPServerDto } from "../dtos";
 import { DatasourcesService } from "../datasources/datasources.service";
 import { MCPRuntimeService } from "./mcp-runtime.service";
 import { CanvasService } from "../canvas/canvas.service";
+import { CanvasNode } from "../canvas/entities/canvas-node.entity";
 
 @Injectable()
 export class MCPServersService implements OnModuleInit {
@@ -198,7 +200,7 @@ export class MCPServersService implements OnModuleInit {
     const toolCount = await this.dataSource
       .createQueryBuilder()
       .select("COUNT(*)", "count")
-      .from("tool", "tool")
+      .from(Tool, "tool")
       .where("tool.mcpServerId = :id", { id })
       .getRawOne()
       .then((result) => parseInt(result.count, 10));
@@ -213,6 +215,14 @@ export class MCPServersService implements OnModuleInit {
     if (mcpServer.status === MCPServerStatus.ACTIVE) {
       await this.mcpRuntimeService.stopServer(mcpServer.slug);
     }
+
+    // Delete associated canvas node first (foreign key constraint)
+    await this.dataSource
+      .createQueryBuilder()
+      .delete()
+      .from(CanvasNode)
+      .where("mcpServerId = :id", { id })
+      .execute();
 
     const result = await this.mcpServerRepository.delete(id);
     if (result.affected === 0) {
