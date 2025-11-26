@@ -50,3 +50,9 @@ Manifest MCP Generator is a Proof-Of-Concept. Here is the current status of the 
 
 - Give us your brutally honest feedback on [GitHub discussions](https://github.com/mnfst/mcp-server-generator/discussions)
 - Write us at bljkicfg1@mozmail.com to talk. We would love to connect!
+
+## Demo video
+
+<a href="https://youtube.com/watch?v=6qHF-6fSYfo" target="_blank">
+  <img src="https://img.youtube.com/vi/6qHF-6fSYfo/maxresdefault.jpg" alt="Manifest MCP Server generator demo" width="100%">
+</a>
