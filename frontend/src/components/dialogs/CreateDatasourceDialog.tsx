@@ -133,6 +133,11 @@ export function CreateDatasourceDialog({
         throw new Error(errorData.message || "Connection test failed");
       }
 
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Connection test failed");
+      }
+
       setTestStatus("success");
     } catch (err) {
       setTestStatus("error");

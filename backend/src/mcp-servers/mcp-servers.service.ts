@@ -93,20 +93,19 @@ export class MCPServersService implements OnModuleInit {
    */
   async create(createMCPServerDto: CreateMCPServerDto): Promise<MCPServer> {
     // Validate datasource exists
-    const datasource = await this.datasourcesService.findOne(
-      createMCPServerDto.datasourceId
-    );
+    await this.datasourcesService.findOne(createMCPServerDto.datasourceId);
 
-    // Generate slug from datasource name with conflict resolution
-    let slug = this.generateSlug(datasource.name);
-    let counter = 1;
-    while (await this.mcpServerRepository.findOne({ where: { slug } })) {
-      slug = `${this.generateSlug(datasource.name)}-${counter}`;
-      counter++;
+    // Use provided slug or generate from name
+    let slug = createMCPServerDto.slug || this.generateSlug(createMCPServerDto.name);
+
+    // Check for slug conflicts
+    const existingServer = await this.mcpServerRepository.findOne({ where: { slug } });
+    if (existingServer) {
+      throw new BadRequestException(`An MCP server with slug "${slug}" already exists`);
     }
 
     const mcpServer = this.mcpServerRepository.create({
-      name: `${datasource.name} MCP Server`,
+      name: createMCPServerDto.name,
       slug,
       datasourceId: createMCPServerDto.datasourceId,
       config: null,

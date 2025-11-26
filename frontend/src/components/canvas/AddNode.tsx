@@ -29,14 +29,14 @@ export const AddNode = memo(({ data }: NodeProps<AddNodeData>) => {
   return (
     <div
       onClick={data.onClick}
-      className="px-6 py-4 rounded-lg border-2 border-dashed border-muted-foreground/50 bg-background hover:border-primary hover:bg-accent transition-colors cursor-pointer group"
-      style={{ minWidth: '200px' }}
+      className="px-12 py-8 rounded-xl border-2 border-dashed border-muted-foreground/50 bg-background hover:border-primary hover:bg-accent transition-colors cursor-pointer group"
+      style={{ minWidth: '320px' }}
     >
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-          <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+          <Plus className="w-10 h-10 text-muted-foreground group-hover:text-primary transition-colors" />
         </div>
-        <p className="text-sm font-medium text-muted-foreground group-hover:text-primary transition-colors">
+        <p className="text-lg font-medium text-muted-foreground group-hover:text-primary transition-colors">
           {data.label}
         </p>
       </div>

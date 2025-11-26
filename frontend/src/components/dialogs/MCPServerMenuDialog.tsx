@@ -56,11 +56,13 @@ export function MCPServerMenuDialog({
 
   const handleToolCreated = (tool: Tool) => {
     setToolDialogOpen(false);
+    onOpenChange(false); // Close the menu dialog so user can see the result
     onToolCreated?.(tool);
   };
 
   const handleResourceCreated = (resource: Resource) => {
     setResourceDialogOpen(false);
+    onOpenChange(false); // Close the menu dialog so user can see the result
     onResourceCreated?.(resource);
   };
 

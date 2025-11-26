@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Toaster } from 'sonner';
 import { FlowCanvas } from './components/canvas/FlowCanvas';
 import { CreateDatasourceDialog } from './components/dialogs/CreateDatasourceDialog';
 import { CreateMCPServerDialog } from './components/dialogs/CreateMCPServerDialog';
@@ -18,6 +19,7 @@ function App() {
 
   return (
     <div className="w-full h-screen bg-background">
+      <Toaster position="top-center" richColors closeButton />
       <div className="flex flex-col h-full">
         <header className="border-b px-4 py-3 flex items-center justify-between">
           <img

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import ReactFlow, {
   Node,
   Edge,
@@ -91,6 +92,7 @@ export function FlowCanvas({
   const [editingDatasource, setEditingDatasource] = useState<Datasource | null>(null);
   const [editMCPServerDialogOpen, setEditMCPServerDialogOpen] = useState(false);
   const [editingMCPServer, setEditingMCPServer] = useState<MCPServer | null>(null);
+  const [testingConnectionId, setTestingConnectionId] = useState<string | null>(null);
 
   // Fetch canvas nodes, datasources, and MCP servers from backend
   useEffect(() => {
@@ -153,7 +155,9 @@ export function FlowCanvas({
                 onEdit: () => handleDatasourceEdit(datasource!),
                 onDelete: () => handleDatasourceDelete(node.datasourceId),
                 onViewSchema: () => handleDatasourceViewSchema(node.datasourceId),
+                onTestConnection: () => handleDatasourceTestConnection(node.datasourceId),
                 hasChildren,
+                isTestingConnection: testingConnectionId === node.datasourceId,
               },
             };
           } else if (node.type === "mcpServer" && node.mcpServerId) {
@@ -302,12 +306,12 @@ export function FlowCanvas({
           }
         });
 
-        // Add initial "Add Datasource" node if no nodes exist
-        if (flowNodes.length === 0) {
+        // Add initial "Add Datasource" node if no datasources exist
+        if (datasources.length === 0) {
           flowNodes.push({
             id: "add-datasource-initial",
             type: CanvasNodeType.ADD,
-            position: { x: 100, y: 100 },
+            position: { x: 0, y: 0 },
             data: { label: "Add Datasource", onClick: onCreateDatasource },
           });
         }
@@ -332,6 +336,26 @@ export function FlowCanvas({
 
     fetchCanvasData();
   }, [onCreateDatasource]);
+
+  // Update isTestingConnection flag when testingConnectionId changes
+  useEffect(() => {
+    if (testingConnectionId) {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === `datasource-${testingConnectionId}`) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                isTestingConnection: true,
+              },
+            };
+          }
+          return node;
+        })
+      );
+    }
+  }, [testingConnectionId, setNodes]);
 
   /**
    * Handle MCP Server node click - opens menu dialog
@@ -380,8 +404,39 @@ export function FlowCanvas({
 
       const resourceNodeId = `resource-${resourceId}`;
 
-      // Remove node
-      setNodes((nds) => nds.filter((n) => n.id !== resourceNodeId));
+      // Find the parent MCP server node to update hasChildren
+      const resourceNode = nodes.find((n) => n.id === resourceNodeId);
+      const parentEdge = edges.find((e) => e.target === resourceNodeId);
+      const parentMcpServerId = parentEdge?.source;
+
+      // Remove node and update parent's hasChildren
+      setNodes((nds) => {
+        const filteredNodes = nds.filter((n) => n.id !== resourceNodeId);
+
+        if (parentMcpServerId) {
+          // Count remaining children for this MCP server
+          const remainingChildren = filteredNodes.filter((n) => {
+            const edge = edges.find((e) => e.target === n.id && e.source === parentMcpServerId);
+            return edge && (n.type === 'tool' || n.type === 'resource');
+          });
+
+          // Update parent MCP server's hasChildren
+          return filteredNodes.map((n) => {
+            if (n.id === parentMcpServerId) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  hasChildren: remainingChildren.length > 0,
+                },
+              };
+            }
+            return n;
+          });
+        }
+
+        return filteredNodes;
+      });
 
       // Remove edges
       setEdges((eds) =>
@@ -481,9 +536,14 @@ export function FlowCanvas({
       );
 
       console.log("MCP server activated successfully");
+      toast.success("MCP server activated", {
+        description: "The MCP server is now running and available.",
+      });
     } catch (error) {
       console.error("Failed to activate MCP server:", error);
-      alert("Failed to activate MCP server. Please try again.");
+      toast.error("Activation failed", {
+        description: "Failed to activate MCP server. Please try again.",
+      });
     }
   };
 
@@ -519,9 +579,14 @@ export function FlowCanvas({
       );
 
       console.log("MCP server deactivated successfully");
+      toast.success("MCP server deactivated", {
+        description: "The MCP server has been stopped.",
+      });
     } catch (error) {
       console.error("Failed to deactivate MCP server:", error);
-      alert("Failed to deactivate MCP server. Please try again.");
+      toast.error("Deactivation failed", {
+        description: "Failed to deactivate MCP server. Please try again.",
+      });
     }
   };
 
@@ -540,8 +605,38 @@ export function FlowCanvas({
 
       const mcpServerNodeId = `mcpServer-${mcpServerId}`;
 
-      // Remove node
-      setNodes((nds) => nds.filter((n) => n.id !== mcpServerNodeId));
+      // Find the parent datasource node to update hasChildren
+      const parentEdge = edges.find((e) => e.target === mcpServerNodeId);
+      const parentDatasourceId = parentEdge?.source;
+
+      // Remove node and update parent's hasChildren
+      setNodes((nds) => {
+        const filteredNodes = nds.filter((n) => n.id !== mcpServerNodeId);
+
+        if (parentDatasourceId) {
+          // Count remaining MCP server children for this datasource
+          const remainingChildren = filteredNodes.filter((n) => {
+            const edge = edges.find((e) => e.target === n.id && e.source === parentDatasourceId);
+            return edge && n.type === 'mcpServer';
+          });
+
+          // Update parent datasource's hasChildren
+          return filteredNodes.map((n) => {
+            if (n.id === parentDatasourceId) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  hasChildren: remainingChildren.length > 0,
+                },
+              };
+            }
+            return n;
+          });
+        }
+
+        return filteredNodes;
+      });
 
       // Remove edges
       setEdges((eds) =>
@@ -572,13 +667,100 @@ export function FlowCanvas({
   };
 
   /**
+   * Handle test connection for a datasource - tests and updates status
+   */
+  const handleDatasourceTestConnection = async (datasourceId: string) => {
+    setTestingConnectionId(datasourceId);
+
+    try {
+      const response = await fetch(apiUrl(`/api/datasources/${datasourceId}/test`), {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to test connection");
+      }
+
+      const result = await response.json();
+      const newStatus = result.success ? 'connected' : 'error';
+
+      // Update the node data to reflect the new status
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === `datasource-${datasourceId}` && node.data.datasource) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                datasource: {
+                  ...node.data.datasource,
+                  status: newStatus,
+                },
+                isTestingConnection: false,
+              },
+            };
+          }
+          return node;
+        })
+      );
+
+      if (result.success) {
+        toast.success("Connection successful", {
+          description: "Database connection is working correctly.",
+        });
+      } else {
+        toast.error("Connection failed", {
+          description: result.message || "Unable to connect to the database.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to test connection:", error);
+      toast.error("Connection test failed", {
+        description: "An error occurred while testing the connection.",
+      });
+    } finally {
+      setTestingConnectionId(null);
+    }
+  };
+
+  /**
    * Handle tool deletion - remove node and edges from canvas
    */
   const handleToolDeleted = (toolId: string) => {
     const toolNodeId = `tool-${toolId}`;
 
-    // Remove node
-    setNodes((nds) => nds.filter((n) => n.id !== toolNodeId));
+    // Find the parent MCP server node to update hasChildren
+    const parentEdge = edges.find((e) => e.target === toolNodeId);
+    const parentMcpServerId = parentEdge?.source;
+
+    // Remove node and update parent's hasChildren
+    setNodes((nds) => {
+      const filteredNodes = nds.filter((n) => n.id !== toolNodeId);
+
+      if (parentMcpServerId) {
+        // Count remaining children for this MCP server
+        const remainingChildren = filteredNodes.filter((n) => {
+          const edge = edges.find((e) => e.target === n.id && e.source === parentMcpServerId);
+          return edge && (n.type === 'tool' || n.type === 'resource');
+        });
+
+        // Update parent MCP server's hasChildren
+        return filteredNodes.map((n) => {
+          if (n.id === parentMcpServerId) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                hasChildren: remainingChildren.length > 0,
+              },
+            };
+          }
+          return n;
+        });
+      }
+
+      return filteredNodes;
+    });
 
     // Remove edges
     setEdges((eds) =>
@@ -832,7 +1014,8 @@ export function FlowCanvas({
         nodeTypes={nodeTypes}
         nodesConnectable={false}
         fitView
-        attributionPosition="bottom-left"
+        fitViewOptions={{ padding: 0.3, minZoom: 1, maxZoom: 1 }}
+        proOptions={{ hideAttribution: true }}
       >
         <Controls />
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
