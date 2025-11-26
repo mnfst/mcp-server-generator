@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import ReactFlow, {
   Node,
   Edge,
@@ -91,6 +92,7 @@ export function FlowCanvas({
   const [editingDatasource, setEditingDatasource] = useState<Datasource | null>(null);
   const [editMCPServerDialogOpen, setEditMCPServerDialogOpen] = useState(false);
   const [editingMCPServer, setEditingMCPServer] = useState<MCPServer | null>(null);
+  const [testingConnectionId, setTestingConnectionId] = useState<string | null>(null);
 
   // Fetch canvas nodes, datasources, and MCP servers from backend
   useEffect(() => {
@@ -153,7 +155,9 @@ export function FlowCanvas({
                 onEdit: () => handleDatasourceEdit(datasource!),
                 onDelete: () => handleDatasourceDelete(node.datasourceId),
                 onViewSchema: () => handleDatasourceViewSchema(node.datasourceId),
+                onTestConnection: () => handleDatasourceTestConnection(node.datasourceId),
                 hasChildren,
+                isTestingConnection: testingConnectionId === node.datasourceId,
               },
             };
           } else if (node.type === "mcpServer" && node.mcpServerId) {
@@ -333,6 +337,26 @@ export function FlowCanvas({
     fetchCanvasData();
   }, [onCreateDatasource]);
 
+  // Update isTestingConnection flag when testingConnectionId changes
+  useEffect(() => {
+    if (testingConnectionId) {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === `datasource-${testingConnectionId}`) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                isTestingConnection: true,
+              },
+            };
+          }
+          return node;
+        })
+      );
+    }
+  }, [testingConnectionId, setNodes]);
+
   /**
    * Handle MCP Server node click - opens menu dialog
    */
@@ -481,9 +505,14 @@ export function FlowCanvas({
       );
 
       console.log("MCP server activated successfully");
+      toast.success("MCP server activated", {
+        description: "The MCP server is now running and available.",
+      });
     } catch (error) {
       console.error("Failed to activate MCP server:", error);
-      alert("Failed to activate MCP server. Please try again.");
+      toast.error("Activation failed", {
+        description: "Failed to activate MCP server. Please try again.",
+      });
     }
   };
 
@@ -519,9 +548,14 @@ export function FlowCanvas({
       );
 
       console.log("MCP server deactivated successfully");
+      toast.success("MCP server deactivated", {
+        description: "The MCP server has been stopped.",
+      });
     } catch (error) {
       console.error("Failed to deactivate MCP server:", error);
-      alert("Failed to deactivate MCP server. Please try again.");
+      toast.error("Deactivation failed", {
+        description: "Failed to deactivate MCP server. Please try again.",
+      });
     }
   };
 
@@ -568,6 +602,63 @@ export function FlowCanvas({
       setSchemaDialogOpen(true);
     } catch (error) {
       console.error("Failed to fetch datasource:", error);
+    }
+  };
+
+  /**
+   * Handle test connection for a datasource - tests and updates status
+   */
+  const handleDatasourceTestConnection = async (datasourceId: string) => {
+    setTestingConnectionId(datasourceId);
+
+    try {
+      const response = await fetch(apiUrl(`/api/datasources/${datasourceId}/test`), {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to test connection");
+      }
+
+      const result = await response.json();
+      const newStatus = result.success ? 'connected' : 'error';
+
+      // Update the node data to reflect the new status
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === `datasource-${datasourceId}` && node.data.datasource) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                datasource: {
+                  ...node.data.datasource,
+                  status: newStatus,
+                },
+                isTestingConnection: false,
+              },
+            };
+          }
+          return node;
+        })
+      );
+
+      if (result.success) {
+        toast.success("Connection successful", {
+          description: "Database connection is working correctly.",
+        });
+      } else {
+        toast.error("Connection failed", {
+          description: result.message || "Unable to connect to the database.",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to test connection:", error);
+      toast.error("Connection test failed", {
+        description: "An error occurred while testing the connection.",
+      });
+    } finally {
+      setTestingConnectionId(null);
     }
   };
 

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Database, CheckCircle2, XCircle, AlertCircle, MoreVertical, Edit, Trash2, TableProperties } from 'lucide-react';
+import { Database, CheckCircle2, XCircle, AlertCircle, MoreVertical, Edit, Trash2, TableProperties, RefreshCw } from 'lucide-react';
 import { Datasource } from 'shared';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,8 +31,12 @@ interface DatasourceNodeData {
   onDelete?: () => void;
   /** Optional callback function triggered when view schema is clicked */
   onViewSchema?: () => void;
+  /** Optional callback function triggered when test connection is clicked */
+  onTestConnection?: () => void;
   /** Whether this node has children (disables delete) */
   hasChildren?: boolean;
+  /** Whether a connection test is in progress */
+  isTestingConnection?: boolean;
 }
 
 /**
@@ -54,7 +58,7 @@ interface DatasourceNodeData {
  * @returns A styled datasource node with connection handles
  */
 export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => {
-  const { datasource, onEdit, onDelete, onViewSchema, hasChildren } = data;
+  const { datasource, onEdit, onDelete, onViewSchema, onTestConnection, hasChildren, isTestingConnection } = data;
 
   /**
    * Returns the appropriate status icon based on datasource connection status.
@@ -163,6 +167,10 @@ export const DatasourceNode = memo(({ data }: NodeProps<DatasourceNodeData>) => 
                   <DropdownMenuItem onClick={onViewSchema}>
                     <TableProperties className="mr-2 h-4 w-4" />
                     View Schema
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onTestConnection} disabled={isTestingConnection}>
+                    <RefreshCw className={`mr-2 h-4 w-4 ${isTestingConnection ? 'animate-spin' : ''}`} />
+                    {isTestingConnection ? 'Testing...' : 'Test Connection'}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={onDelete}

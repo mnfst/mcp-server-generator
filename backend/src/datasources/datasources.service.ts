@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { createConnection } from 'mysql2/promise';
@@ -11,7 +11,7 @@ import { CreateDatasourceDto } from '../dtos';
 import { CanvasService } from '../canvas/canvas.service';
 
 @Injectable()
-export class DatasourcesService {
+export class DatasourcesService implements OnModuleInit {
   private readonly algorithm = 'aes-256-ctr';
   private readonly key: Buffer;
 
@@ -33,6 +33,43 @@ export class DatasourcesService {
     // Use a cryptographically secure salt derived from the key itself
     const salt = Buffer.from(encryptionKey.substring(0, 16));
     this.key = scryptSync(encryptionKey, salt, 32);
+  }
+
+  /**
+   * Lifecycle hook that runs when the module is initialized.
+   * Verifies connections for all existing datasources and updates their status.
+   */
+  async onModuleInit(): Promise<void> {
+    console.log('[DatasourcesService] Checking datasource connections on startup...');
+    await this.verifyAllConnections();
+  }
+
+  /**
+   * Verifies connections for all datasources and updates their status.
+   * This runs on startup and can be called manually to refresh statuses.
+   */
+  async verifyAllConnections(): Promise<void> {
+    const datasources = await this.datasourceRepository.find();
+
+    if (datasources.length === 0) {
+      console.log('[DatasourcesService] No datasources to verify');
+      return;
+    }
+
+    console.log(`[DatasourcesService] Verifying ${datasources.length} datasource(s)...`);
+
+    for (const datasource of datasources) {
+      const canConnect = await this.testConnection(datasource);
+      const newStatus = canConnect ? 'connected' : 'error';
+
+      if (datasource.status !== newStatus) {
+        datasource.status = newStatus;
+        await this.datasourceRepository.save(datasource);
+        console.log(`[DatasourcesService] ${datasource.name}: status changed to '${newStatus}'`);
+      } else {
+        console.log(`[DatasourcesService] ${datasource.name}: status unchanged ('${newStatus}')`);
+      }
+    }
   }
 
   /**

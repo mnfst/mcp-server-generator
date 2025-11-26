@@ -1,0 +1,9 @@
+{
+  "servers": [
+    {
+      "name": "Zele MCP Server",
+      "url": "http://localhost:3001/mcp/zele",
+      "enabled": true
+    }
+  ]
+}

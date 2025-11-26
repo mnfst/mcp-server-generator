@@ -1,0 +1,20 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: mcp-agent-webui
+    ports:
+      - "8080:8080"
+    environment:
+      # Point to the agent running on host machine
+      - OPENAI_API_BASE_URLS=http://host.docker.internal:8082/v1
+      - OPENAI_API_KEYS=sk-dummy-key
+      - WEBUI_AUTH=false
+      - ENABLE_OLLAMA_API=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - open-webui-data:/app/backend/data
+    restart: unless-stopped
+
+volumes:
+  open-webui-data:

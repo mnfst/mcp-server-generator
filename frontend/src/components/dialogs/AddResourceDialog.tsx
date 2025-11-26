@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -63,7 +64,9 @@ export function AddResourceDialog({
 
   const handleFileSelect = (file: File) => {
     if (file.size > MAX_FILE_SIZE) {
-      alert('File size must be less than 10MB');
+      toast.warning("File too large", {
+        description: "File size must be less than 10MB.",
+      });
       return;
     }
     setSelectedFile(file);
