@@ -306,12 +306,12 @@ export function FlowCanvas({
           }
         });
 
-        // Add initial "Add Datasource" node if no nodes exist
-        if (flowNodes.length === 0) {
+        // Add initial "Add Datasource" node if no datasources exist
+        if (datasources.length === 0) {
           flowNodes.push({
             id: "add-datasource-initial",
             type: CanvasNodeType.ADD,
-            position: { x: 100, y: 100 },
+            position: { x: 0, y: 0 },
             data: { label: "Add Datasource", onClick: onCreateDatasource },
           });
         }
@@ -404,8 +404,39 @@ export function FlowCanvas({
 
       const resourceNodeId = `resource-${resourceId}`;
 
-      // Remove node
-      setNodes((nds) => nds.filter((n) => n.id !== resourceNodeId));
+      // Find the parent MCP server node to update hasChildren
+      const resourceNode = nodes.find((n) => n.id === resourceNodeId);
+      const parentEdge = edges.find((e) => e.target === resourceNodeId);
+      const parentMcpServerId = parentEdge?.source;
+
+      // Remove node and update parent's hasChildren
+      setNodes((nds) => {
+        const filteredNodes = nds.filter((n) => n.id !== resourceNodeId);
+
+        if (parentMcpServerId) {
+          // Count remaining children for this MCP server
+          const remainingChildren = filteredNodes.filter((n) => {
+            const edge = edges.find((e) => e.target === n.id && e.source === parentMcpServerId);
+            return edge && (n.type === 'tool' || n.type === 'resource');
+          });
+
+          // Update parent MCP server's hasChildren
+          return filteredNodes.map((n) => {
+            if (n.id === parentMcpServerId) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  hasChildren: remainingChildren.length > 0,
+                },
+              };
+            }
+            return n;
+          });
+        }
+
+        return filteredNodes;
+      });
 
       // Remove edges
       setEdges((eds) =>
@@ -574,8 +605,38 @@ export function FlowCanvas({
 
       const mcpServerNodeId = `mcpServer-${mcpServerId}`;
 
-      // Remove node
-      setNodes((nds) => nds.filter((n) => n.id !== mcpServerNodeId));
+      // Find the parent datasource node to update hasChildren
+      const parentEdge = edges.find((e) => e.target === mcpServerNodeId);
+      const parentDatasourceId = parentEdge?.source;
+
+      // Remove node and update parent's hasChildren
+      setNodes((nds) => {
+        const filteredNodes = nds.filter((n) => n.id !== mcpServerNodeId);
+
+        if (parentDatasourceId) {
+          // Count remaining MCP server children for this datasource
+          const remainingChildren = filteredNodes.filter((n) => {
+            const edge = edges.find((e) => e.target === n.id && e.source === parentDatasourceId);
+            return edge && n.type === 'mcpServer';
+          });
+
+          // Update parent datasource's hasChildren
+          return filteredNodes.map((n) => {
+            if (n.id === parentDatasourceId) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  hasChildren: remainingChildren.length > 0,
+                },
+              };
+            }
+            return n;
+          });
+        }
+
+        return filteredNodes;
+      });
 
       // Remove edges
       setEdges((eds) =>
@@ -668,8 +729,38 @@ export function FlowCanvas({
   const handleToolDeleted = (toolId: string) => {
     const toolNodeId = `tool-${toolId}`;
 
-    // Remove node
-    setNodes((nds) => nds.filter((n) => n.id !== toolNodeId));
+    // Find the parent MCP server node to update hasChildren
+    const parentEdge = edges.find((e) => e.target === toolNodeId);
+    const parentMcpServerId = parentEdge?.source;
+
+    // Remove node and update parent's hasChildren
+    setNodes((nds) => {
+      const filteredNodes = nds.filter((n) => n.id !== toolNodeId);
+
+      if (parentMcpServerId) {
+        // Count remaining children for this MCP server
+        const remainingChildren = filteredNodes.filter((n) => {
+          const edge = edges.find((e) => e.target === n.id && e.source === parentMcpServerId);
+          return edge && (n.type === 'tool' || n.type === 'resource');
+        });
+
+        // Update parent MCP server's hasChildren
+        return filteredNodes.map((n) => {
+          if (n.id === parentMcpServerId) {
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                hasChildren: remainingChildren.length > 0,
+              },
+            };
+          }
+          return n;
+        });
+      }
+
+      return filteredNodes;
+    });
 
     // Remove edges
     setEdges((eds) =>
@@ -923,6 +1014,7 @@ export function FlowCanvas({
         nodeTypes={nodeTypes}
         nodesConnectable={false}
         fitView
+        fitViewOptions={{ padding: 0.3, minZoom: 1, maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
       >
         <Controls />

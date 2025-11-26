@@ -1,8 +1,8 @@
 {
   "servers": [
     {
-      "name": "Zele MCP Server",
-      "url": "http://localhost:3001/mcp/zele",
+      "name": "CRM DB",
+      "url": "http://localhost:3001/mcp/my-mcp-server",
       "enabled": true
     }
   ]

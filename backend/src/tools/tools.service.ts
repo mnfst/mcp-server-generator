@@ -6,9 +6,10 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Tool } from './entities/tool.entity';
+import { CanvasNode } from '../canvas/entities/canvas-node.entity';
 import { ToolTestResult } from 'shared';
 import { CreateToolDto } from '../dtos';
 import { MCPServersService } from '../mcp-servers/mcp-servers.service';
@@ -32,6 +33,8 @@ export class ToolsService {
   constructor(
     @InjectRepository(Tool)
     private toolRepository: Repository<Tool>,
+    @InjectDataSource()
+    private dataSource: DataSource,
     @Inject(forwardRef(() => MCPServersService))
     private mcpServersService: MCPServersService,
     private datasourcesService: DatasourcesService,
@@ -187,6 +190,14 @@ export class ToolsService {
    */
   async delete(id: string): Promise<void> {
     const tool = await this.findOne(id);
+
+    // Delete associated canvas node first
+    await this.dataSource
+      .createQueryBuilder()
+      .delete()
+      .from(CanvasNode)
+      .where('toolId = :id', { id })
+      .execute();
 
     const result = await this.toolRepository.delete(id);
     if (result.affected === 0) {
