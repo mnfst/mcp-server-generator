@@ -832,7 +832,7 @@ export function FlowCanvas({
         nodeTypes={nodeTypes}
         nodesConnectable={false}
         fitView
-        attributionPosition="bottom-left"
+        proOptions={{ hideAttribution: true }}
       >
         <Controls />
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />

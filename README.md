@@ -125,40 +125,61 @@ The backend will automatically create the necessary database tables on first run
 
 ## Running Multiple Instances
 
-You can run multiple isolated instances of the application simultaneously using the `./scripts/mcp` helper script.
+You can run up to 3 isolated instances of the application simultaneously for development.
 
-### Setup
+### Quick Start (Development)
+
+```bash
+# Instance 1 (default): http://localhost:5173 -> http://localhost:3001
+npm run dev
+
+# Instance 2: http://localhost:5174 -> http://localhost:3002
+npm run dev2
+
+# Instance 3: http://localhost:5175 -> http://localhost:3003
+npm run dev3
+```
+
+The `.env.instance2` and `.env.instance3` files are pre-configured with the correct ports. All instances share the same database.
+
+### Instance Port Configuration
+
+| Instance | Frontend | Backend | Command        |
+| -------- | -------- | ------- | -------------- |
+| 1        | 5173     | 3001    | `npm run dev`  |
+| 2        | 5174     | 3002    | `npm run dev2` |
+| 3        | 5175     | 3003    | `npm run dev3` |
+
+> **Note for AI assistants (Claude Code, etc.):** When working in this repo, do NOT kill dev server processes on ports 3001-3003 or 5173-5175 unless explicitly asked. Another instance may be using them. Always check which instance you're working with before stopping servers.
+
+### Docker-based Instances (Production-like)
+
+For fully isolated instances with separate databases, use the `./scripts/mcp` helper script:
 
 ```bash
 # Create instance configurations from template
 cp .env.instance.example .env.instance1
 cp .env.instance.example .env.instance2
 
-# Edit each instance with unique ports
+# Edit each instance with unique DB ports
 # Instance 1: DB_PORT=3306, BACKEND_PORT=3001, FRONTEND_PORT=5173
 # Instance 2: DB_PORT=3316, BACKEND_PORT=3002, FRONTEND_PORT=5174
-```
 
-### Managing Instances
-
-```bash
 # Start an instance
 ./scripts/mcp 1 up -d
 ./scripts/mcp 2 up -d
 
 # View instance status
 ./scripts/mcp 1 ps
-./scripts/mcp 2 ps
 
 # View logs
 ./scripts/mcp 1 logs -f
 
 # Stop an instance
 ./scripts/mcp 1 down
-./scripts/mcp 2 down
 ```
 
-Each instance gets isolated containers, volumes, and networks automatically prefixed with `mcp-inst<N>`.
+Each Docker instance gets isolated containers, volumes, and networks automatically prefixed with `mcp-inst<N>`.
 
 ## Usage
 
